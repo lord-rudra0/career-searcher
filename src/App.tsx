@@ -21,7 +21,6 @@ function App() {
   const handleAnswer = async (answer: string) => {
     const currentQuestionData = categories[currentCategory].questions[currentQuestion];
 
-    // Use functional update for answers
     setAnswers((prevAnswers) => [
       ...prevAnswers,
       { questionId: currentQuestionData.id, answer }
@@ -36,6 +35,7 @@ function App() {
     } else {
       setLoading(true);
       setError(null);
+
       try {
         const response = await axios.post('http://localhost:5000/analyze', {
           answers: [...answers, { questionId: currentQuestionData.id, answer }]
@@ -45,20 +45,18 @@ function App() {
           throw new Error('Invalid response format from server');
         }
 
-        setNextQuestions(response.data.questions);
+        // Only take 5 questions and then stop
+        setNextQuestions(response.data.questions.slice(0, 5));
         setCompleted(true);
       } catch (error) {
         console.error('Error analyzing answers:', error);
-        if (axios.isAxiosError(error)) {
-          setError(`Server error: ${error.response?.data?.message || error.message}`);
-        } else {
-          setError('Failed to generate follow-up questions. Please try again.');
-        }
+        setError('Failed to generate follow-up questions. Please try again.');
       } finally {
         setLoading(false);
       }
     }
   };
+
 
   if (loading) {
     return (
