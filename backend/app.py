@@ -55,6 +55,7 @@ def generate_follow_up_questions(answers):
             // Add more careers here
         ]
     }}
+    
     """
     
     try:

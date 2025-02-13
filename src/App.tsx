@@ -20,13 +20,12 @@ function App() {
 
   const handleAnswer = async (answer: string) => {
     const currentQuestionData = categories[currentCategory].questions[currentQuestion];
-    const newAnswer = {
-      questionId: currentQuestionData.id,
-      answer
-    };
-    
-    const updatedAnswers = [...answers, newAnswer];
-    setAnswers(updatedAnswers);
+
+    // Use functional update for answers
+    setAnswers((prevAnswers) => [
+      ...prevAnswers,
+      { questionId: currentQuestionData.id, answer }
+    ]);
 
     // Move to next question or category
     if (currentQuestion + 1 < categories[currentCategory].questions.length) {
@@ -38,21 +37,23 @@ function App() {
       setLoading(true);
       setError(null);
       try {
-        console.log('Sending answers to backend:', updatedAnswers);
         const response = await axios.post('http://localhost:5000/analyze', {
-          answers: updatedAnswers
+          answers: [...answers, { questionId: currentQuestionData.id, answer }]
         });
-        
-        console.log('Received response:', response.data);
-        if (response.data.questions) {
-          setNextQuestions(response.data.questions);
-          setCompleted(true);
-        } else {
+
+        if (!response.data.questions) {
           throw new Error('Invalid response format from server');
         }
+
+        setNextQuestions(response.data.questions);
+        setCompleted(true);
       } catch (error) {
         console.error('Error analyzing answers:', error);
-        setError('Failed to generate follow-up questions. Please try again.');
+        if (axios.isAxiosError(error)) {
+          setError(`Server error: ${error.response?.data?.message || error.message}`);
+        } else {
+          setError('Failed to generate follow-up questions. Please try again.');
+        }
       } finally {
         setLoading(false);
       }
