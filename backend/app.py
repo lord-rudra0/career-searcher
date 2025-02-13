@@ -38,13 +38,21 @@ def generate_follow_up_questions(answers):
                         "text": "Question text here?",
                         "options": [
                             "Option 1",
-                            "Option 2", 
+                            "Option 2",
                             "Option 3",
                             "Option 4"
                         ]
-                    }}
+                    }},
+                    // Add more questions here
                 ]
             }}
+        ],
+        "careers": [
+            {{
+                "name": "Career Name",
+                "match_percentage": 85
+            }},
+            // Add more careers here
         ]
     }}
     """
