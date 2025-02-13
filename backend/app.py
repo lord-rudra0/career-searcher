@@ -17,9 +17,14 @@ model = genai.GenerativeModel('gemini-pro')
 def generate_follow_up_questions(answers):
     # Create a prompt for Gemini AI
     prompt = f"""
+    act as career advisor and generate questions based on the answers
     Based on these answers from a quiz: {answers}
     
-    Generate 3 follow-up questions that would help assess the respondent's skills and thinking further.
+    Generate 1 follow-up questions that would help assess the respondent's skills and thinking further.
+    and give only 5 questions.
+    after 5 questions, stop the generation. and valuate all the answer and act as career counselor and give 5 real world career  with possibility of success with percentage .
+    user should get the his career path with the percentage of success.
+    after 5 questions, stop the generation. and valuate all the answer and act as career counselor and give 5 real world career  with possibility of success with percentage .
     Each question should have 4 multiple choice options.
     
     Return ONLY valid JSON in exactly this format, with no additional text:
