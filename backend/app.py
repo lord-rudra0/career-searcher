@@ -74,6 +74,28 @@ def generate_follow_up_questions(answers):
                         }
                     ]
                 }
+            ],
+            "careers": [
+                {
+                    "name": "Software Engineer",
+                    "match_percentage": 85
+                },
+                {
+                    "name": "Data Scientist",
+                    "match_percentage": 80
+                },
+                {
+                    "name": "Product Manager",
+                    "match_percentage": 75
+                },
+                {
+                    "name": "UX Designer",
+                    "match_percentage": 70
+                },
+                {
+                    "name": "Marketing Specialist",
+                    "match_percentage": 65
+                }
             ]
         }
 
