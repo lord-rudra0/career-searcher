@@ -19,7 +19,8 @@ def generate_follow_up_questions(answers):
     prompt = f"""
     Act as a professional career advisor.
 
-    1️⃣ Based on these quiz answers: {answers}, generate exactly **5 follow-up questions** that further assess the respondent's skills.  
+    1️⃣ Based on these quiz answers: {answers}, generate exactly **1 follow-up questions** in 5 pages  that further assess the respondent's skills.  
+       **important: After generating  questions, STOP and provide an AI-based career analysis.**
        Each question must have 4 multiple-choice options.
 
     2️⃣ After generating exactly 5 questions, STOP and provide an AI-based **career analysis**:  
