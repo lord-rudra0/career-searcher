@@ -21,43 +21,55 @@ function App() {
     setCategories(initialQuestions);
   }, []);
 
-  const handleAnswer = async (answer: string) => {
+  const handleAnswerSelection = (questionId: string, answer: string) => {
+    setSelectedAnswers((prev) => ({ ...prev, [questionId]: answer }));
+  };
+
+  const handleNextQuestion = () => {
     const currentQuestionData = categories[currentCategory].questions[currentQuestion];
-    setSelectedAnswers((prev) => ({ ...prev, [currentQuestionData.id]: answer }));
+
+    if (!selectedAnswers[currentQuestionData.id]) return; // Prevent moving forward without an answer
 
     setAnswers((prevAnswers) => [
       ...prevAnswers,
-      { questionId: currentQuestionData.id, answer }
+      { questionId: currentQuestionData.id, answer: selectedAnswers[currentQuestionData.id] }
     ]);
 
-    setTimeout(() => {
-      if (currentQuestion + 1 < categories[currentCategory].questions.length) {
-        setCurrentQuestion(currentQuestion + 1);
-      } else if (currentCategory + 1 < categories.length) {
-        setCurrentCategory(currentCategory + 1);
-        setCurrentQuestion(0);
-      } else {
-        setLoading(true);
-        setError(null);
+    // Check if it's the LAST question in the LAST category
+    const isLastQuestion =
+      currentCategory === categories.length - 1 &&
+      currentQuestion === categories[currentCategory].questions.length - 1;
 
-        axios.post('http://localhost:5000/analyze', {
-          answers: [...answers, { questionId: currentQuestionData.id, answer }]
-        })
-          .then(response => {
-            if (!response.data.questions || !response.data.careers) {
-              throw new Error('Invalid response format from server');
-            }
-            setNextQuestions(response.data.questions[0].questions.slice(0, 5));
-            setCareerRecommendations(response.data.careers);
-            setCompleted(true);
-          })
-          .catch(error => {
-            console.error('Error analyzing answers:', error);
-            setError('Failed to generate follow-up questions. Please try again.');
-          })
-          .finally(() => setLoading(false));
+    if (isLastQuestion) {
+      handleSubmitAnswers();
+    } else if (currentQuestion + 1 < categories[currentCategory].questions.length) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else if (currentCategory + 1 < categories.length) {
+      setCurrentCategory(currentCategory + 1);
+      setCurrentQuestion(0);
+    }
+  };
+
+  const handleSubmitAnswers = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await axios.post('http://localhost:5000/analyze', { answers });
+
+      if (!response.data.questions || !response.data.careers) {
+        throw new Error('Invalid response format from server');
       }
-    }, 500); // Delay transition for UX
+
+      setNextQuestions(response.data.questions[0].questions.slice(0, 5));
+      setCareerRecommendations(response.data.careers);
+      setCompleted(true);
+    } catch (error) {
+      console.error('Error analyzing answers:', error);
+      setError('Failed to generate follow-up questions. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleShowCareers = () => setShowCareers(true);
@@ -103,6 +115,7 @@ function App() {
                     key={oIdx}
                     className={`text-left px-4 py-3 border rounded-lg transition-colors 
                     ${selectedAnswers[question.id] === option ? "bg-green-500 text-white" : "hover:bg-blue-50"}`}
+                    onClick={() => handleAnswerSelection(question.id, option)}
                   >
                     {option}
                   </button>
@@ -168,12 +181,19 @@ function App() {
                 key={idx}
                 className={`text-left px-4 py-3 border rounded-lg transition-colors 
                 ${selectedAnswers[currentQuestionData.id] === option ? "bg-green-500 text-white" : "hover:bg-blue-50"}`}
-                onClick={() => handleAnswer(option)}
+                onClick={() => handleAnswerSelection(currentQuestionData.id, option)}
               >
                 {option}
               </button>
             ))}
           </div>
+
+          <button
+            onClick={handleNextQuestion}
+            className="mt-4 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            {currentCategory === categories.length - 1 && currentQuestion === categories[currentCategory].questions.length - 1 ? "Next" : "Next"}
+          </button>
         </div>
       </div>
     </div>
