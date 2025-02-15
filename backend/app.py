@@ -26,7 +26,7 @@ def generate_follow_up_questions(answers):
     2️⃣ After generating exactly 5 questions, STOP and provide an AI-based **career analysis**:  
        Suggest 5 real-world career options with a success probability percentage based on the answers.
 
-    🛑 **IMPORTANT:** Return ONLY valid JSON, structured exactly like this:
+     🛑**IMPORTANT:** Return ONLY valid JSON, structured exactly like this:
     {{
         "questions": [
             {{
