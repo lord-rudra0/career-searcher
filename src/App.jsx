@@ -22,70 +22,79 @@ function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Initialize with predefined questions
     setAllQuestions(questionsData.predefinedQuestions);
   }, []);
 
   const handleSelectAnswer = (option) => {
     setCurrentAnswer(option);
-    setError(null); // Clear any previous errors
+    setError(null);
   };
 
-  const handleSubmitAnswer = async () => {
-    if (!currentAnswer) return;
+  const handleNextQuestion = async () => {
+    if (!currentAnswer) {
+      setError('Please select an answer before continuing');
+      return;
+    }
 
-    try {
-      const newAnswers = [
-        ...answers,
-        {
-          question: allQuestions[currentQuestionIndex].question,
-          answer: currentAnswer
+    // Save current Q&A
+    const currentQ = allQuestions[currentQuestionIndex];
+    const newAnswer = {
+      question: currentQ.question,
+      answer: currentAnswer
+    };
+
+    const updatedAnswers = [...answers, newAnswer];
+    setAnswers(updatedAnswers);
+
+    // If we've completed predefined questions, start generating AI questions
+    if (currentQuestionIndex >= questionsData.predefinedQuestions.length - 1 &&
+      allQuestions.length < 20) {
+      try {
+        const response = await api.post('/generate-question', {
+          previousQA: updatedAnswers
+        });
+
+        if (response.data.question) {
+          const aiQuestion = {
+            id: allQuestions.length + 1,
+            ...response.data.question,
+            type: 'mcq'
+          };
+          setAllQuestions(prev => [...prev, aiQuestion]);
         }
-      ];
-      setAnswers(newAnswers);
-
-      if (currentQuestionIndex < allQuestions.length - 1) {
-        if (currentQuestionIndex >= 19) {
-          try {
-            const response = await api.post('/generate-question', {
-              previousQA: newAnswers
-            });
-
-            if (response.data.question) {
-              setAllQuestions(prevQuestions => [...prevQuestions, response.data.question]);
-            }
-          } catch (error) {
-            console.error('Error generating question:', error);
-            setError('Failed to generate next question. Please try again.');
-            return;
-          }
-        }
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setCurrentAnswer('');
-      } else {
-        setIsAnalyzing(true);
-        setError(null);
-
-        try {
-          const response = await api.post('/analyze-answers', {
-            answers: newAnswers
-          });
-
-          if (response.data.error) {
-            throw new Error(response.data.error);
-          }
-
-          setCareerResults(response.data.careers);
-        } catch (error) {
-          console.error('Error analyzing answers:', error);
-          setError('Failed to analyze answers. Please try again.');
-          setIsAnalyzing(false);
-          return;
-        }
-        setIsAnalyzing(false);
+      } catch (err) {
+        console.error('Error generating AI question:', err);
+        setError('Failed to generate next question');
+        return;
       }
-    } catch (error) {
-      console.error('Error in submit handler:', error);
-      setError('An unexpected error occurred. Please try again.');
+    }
+
+    // Move to next question or finish
+    if (currentQuestionIndex < allQuestions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setCurrentAnswer('');
+    } else if (updatedAnswers.length >= 20) {
+      handleFinish(updatedAnswers);
+    }
+
+    // Add these logs in handleNextQuestion
+    console.log('Current index:', currentQuestionIndex);
+    console.log('All questions:', allQuestions);
+    console.log('Predefined questions length:', questionsData.predefinedQuestions.length);
+  };
+
+  const handleFinish = async (finalAnswers) => {
+    setIsAnalyzing(true);
+    try {
+      const response = await api.post('/analyze-answers', {
+        answers: finalAnswers
+      });
+      setCareerResults(response.data.careers);
+    } catch (err) {
+      console.error('Error analyzing answers:', err);
+      setError('Failed to analyze answers');
+    } finally {
       setIsAnalyzing(false);
     }
   };
@@ -133,7 +142,7 @@ function App() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-indigo-900">Question {currentQuestionIndex + 1}</h2>
                 <span className="text-sm text-gray-500">
-                  {currentQuestionIndex + 1} of {allQuestions.length}
+                  {currentQuestionIndex + 1} of {Math.max(20, allQuestions.length)}
                 </span>
               </div>
               <p className="text-lg text-gray-700 mb-6">{currentQuestion.question}</p>
@@ -143,8 +152,8 @@ function App() {
                     key={index}
                     onClick={() => handleSelectAnswer(option)}
                     className={`w-full p-4 text-left rounded-lg transition-colors ${currentAnswer === option
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
                       }`}
                   >
                     {option}
@@ -153,14 +162,14 @@ function App() {
               </div>
             </div>
             <button
-              onClick={handleSubmitAnswer}
+              onClick={handleNextQuestion}
               disabled={!currentAnswer}
               className={`w-full py-3 px-6 rounded-lg transition-colors ${currentAnswer
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
             >
-              {currentQuestionIndex === allQuestions.length - 1 ? 'Finish' : 'Next Question'}
+              {currentQuestionIndex < 19 ? 'Next Question' : 'Finish'}
             </button>
           </>
         ) : null}

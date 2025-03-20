@@ -26,39 +26,33 @@ def generate_question():
         data = request.json
         previous_qa = data.get('previousQA', [])
         
-        # First AI: Question Generator
-        context = """You are an AI career counselor. Based on the following previous questions and answers, 
-        generate a new multiple-choice question that will help determine the user's ideal career path. 
+        # Format previous Q&A for the AI
+        qa_context = "\n".join([f"Q: {qa['question']}\nA: {qa['answer']}" for qa in previous_qa])
         
-        Requirements:
-        1. Question must be different from previous ones
-        2. Build upon previous responses to dig deeper
-        3. Focus on career-relevant traits, skills, or preferences
-        4. Include 4 distinct and relevant options
-        5. Make options specific and mutually exclusive
+        prompt = f"""Based on these previous responses:
+        {qa_context}
         
-        Format the response EXACTLY as this JSON:
-        {
-            "question": "Your question text here",
-            "options": ["Option 1", "Option 2", "Option 3", "Option 4"]
-        }
+        Generate a new career-focused multiple-choice question.
+        Format as JSON:
+        {{
+            "question": "question text",
+            "options": ["option1", "option2", "option3", "option4"]
+        }}"""
+
+        response = question_ai.generate_content(prompt)
         
-        Previous Q&A History:\n"""
-        
-        for qa in previous_qa:
-            context += f"Q: {qa['question']}\nSelected: {qa['answer']}\n\n"
-        
-        response = question_ai.generate_content(context)
-        question_data = json.loads(response.text)
-        
-        return jsonify({
-            "question": {
-                "id": len(previous_qa) + 1,
-                "question": question_data["question"],
-                "type": "mcq",
-                "options": question_data["options"]
-            }
-        })
+        try:
+            # Clean and parse the response
+            cleaned_text = response.text.strip()
+            if cleaned_text.startswith("```json"):
+                cleaned_text = cleaned_text[7:]
+            if cleaned_text.endswith("```"):
+                cleaned_text = cleaned_text[:-3]
+            new_question = json.loads(cleaned_text)
+            return jsonify({"question": new_question})
+        except json.JSONDecodeError:
+            return jsonify({"error": "Failed to generate valid question"}), 500
+
     except Exception as e:
         print(f"Error generating question: {str(e)}")
         return jsonify({"error": str(e)}), 500
@@ -67,86 +61,50 @@ def generate_question():
 def analyze_answers():
     try:
         data = request.json
-        answers = data.get('answers', [])
+        all_answers = data.get('answers', [])
+
+        # Step 1: Generate detailed analysis with the first AI
+        analysis_prompt = f"""Analyze these career-related responses:
+        {json.dumps(all_answers, indent=2)}
         
-        # Second AI: Detailed Profile Analysis
-        summary_prompt = """As a career analysis AI, create a comprehensive profile summary based on these multiple-choice responses.
+        Provide a detailed analysis of the person's:
+        1. Key strengths
+        2. Work preferences
+        3. Personality traits
+        4. Skill inclinations"""
+
+        analysis_response = summary_ai.generate_content(analysis_prompt)
+        detailed_analysis = analysis_response.text
+
+        # Step 2: Generate career recommendations with the second AI
+        career_prompt = f"""Based on this analysis:
+        {detailed_analysis}
         
-        Focus on:
-        1. Key personality traits
-        2. Professional interests
-        3. Skills and competencies
-        4. Work style preferences
-        5. Values and motivations
-        6. Learning style and adaptability
-        7. Leadership potential
-        8. Communication style
-        9. Decision-making approach
-        10. Career priorities
-        
-        Responses to analyze:\n"""
-        
-        for qa in answers:
-            summary_prompt += f"Q: {qa['question']}\nSelected: {qa['answer']}\n\n"
-        
-        # Third AI: Career Matching
-        career_prompt = f"""As a career matching specialist, analyze this candidate profile and recommend the top 5 careers.
-        
-        Candidate Profile:
-        {summary_prompt}
-        
-        Return the response as a JSON array. Do not include any markdown formatting or code block indicators.
-        The response should match exactly this structure:
+        Recommend 5 best-matching careers. Format as JSON array:
         [
             {{
                 "title": "Career Title",
-                "match": 85,
-                "description": "Key reasons, required skills, growth potential, and work environment fit"
+                "match": match_percentage,
+                "description": "Why this career matches"
             }}
         ]
-        
-        Important:
-        - Return only the JSON array, no other text
-        - Do not include ```json or ``` markers
-        - Ensure valid JSON format
-        - Include exactly 5 career recommendations"""
-        
-        # Add error handling for career generation and JSON parsing
-        try:
-            career_response = career_ai.generate_content(career_prompt)
-            if not career_response:
-                raise Exception("Failed to generate career matches")
-            
-            # Remove any markdown code block indicators from the response
-            cleaned_text = career_response.text.strip()
-            if cleaned_text.startswith("```json"):
-                cleaned_text = cleaned_text[7:]
-            if cleaned_text.startswith("```"):
-                cleaned_text = cleaned_text[3:]
-            if cleaned_text.endswith("```"):
-                cleaned_text = cleaned_text[:-3]
-            cleaned_text = cleaned_text.strip()
-            
-            try:
-                careers = json.loads(cleaned_text)
-                if not isinstance(careers, list):
-                    raise Exception("Invalid career response format")
-            except json.JSONDecodeError as e:
-                print(f"Invalid JSON response: {cleaned_text}")
-                return jsonify({"error": "Failed to parse career recommendations"}), 500
-                
-        except Exception as e:
-            print(f"Career generation error: {str(e)}")
-            return jsonify({"error": "Failed to generate career matches"}), 500
+        Each match_percentage should be between 85-98."""
 
-        return jsonify({"careers": careers})
+        career_response = career_ai.generate_content(career_prompt)
         
+        # Clean and parse the career response
+        cleaned_text = career_response.text.strip()
+        if cleaned_text.startswith("```json"):
+            cleaned_text = cleaned_text[7:]
+        if cleaned_text.endswith("```"):
+            cleaned_text = cleaned_text[:-3]
+        
+        careers = json.loads(cleaned_text)
+        return jsonify({"careers": careers})
+
     except Exception as e:
-        print(f"Error analyzing answers: {str(e)}")
-        return jsonify({
-            "error": str(e),
-            "details": "An error occurred while processing your answers"
-        }), 500
+        print(f"Error in analysis: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/test-api', methods=['GET'])
 def test_api():
