@@ -10,7 +10,8 @@ import {
   Zap,
   Award,
   Sparkle,
-  Loader2
+  Loader2,
+  XCircle
 } from 'lucide-react';
 import questionsData from './questions.json';
 import axios from 'axios';
@@ -34,6 +35,7 @@ function App() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
+  const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
 
   useEffect(() => {
     // Initialize with predefined questions
@@ -45,6 +47,63 @@ function App() {
     setError(null);
   };
 
+  const generateNextAIQuestion = async (previousAnswers, retryCount = 0) => {
+    try {
+      // Check if server is reachable
+      const isServerAvailable = await checkServerConnection();
+      if (!isServerAvailable) {
+        throw new Error('Unable to connect to server');
+      }
+
+      console.log('=== Generating New AI Question ===');
+      console.log('Based on previous Q&A:', previousAnswers);
+
+      const response = await api.post('/generate-question', {
+        previousQA: previousAnswers
+      });
+
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+
+      if (response.data.question) {
+        const aiQuestion = {
+          id: allQuestions.length + 1,
+          question: response.data.question.question,
+          type: 'mcq',
+          options: response.data.question.options
+        };
+
+        console.log('\nNew AI Generated Question:', aiQuestion);
+        setAllQuestions(prev => [...prev, aiQuestion]);
+        return true;
+      }
+      return false;
+
+    } catch (err) {
+      console.error('Error generating AI question:', err);
+
+      // Retry logic for connection issues
+      if (retryCount < 3 && (err.message.includes('disconnected') || err.message.includes('connect'))) {
+        console.log(`Retrying... Attempt ${retryCount + 1} of 3`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+        return generateNextAIQuestion(previousAnswers, retryCount + 1);
+      }
+
+      setError(err.message || 'Failed to generate next question');
+      return false;
+    }
+  };
+
+  const checkServerConnection = async () => {
+    try {
+      await api.get('/health'); // Add a health check endpoint to your backend
+      return true;
+    } catch (err) {
+      return false;
+    }
+  };
+
   const handleNextQuestion = async () => {
     if (!currentAnswer) {
       setError('Please select an answer before continuing');
@@ -54,10 +113,9 @@ function App() {
     setIsLoading(true);
     setError(null);
 
-    // Set up loader timeout
-    const loaderTimeout = setTimeout(() => {
+    let loaderTimeout = setTimeout(() => {
       setShowLoader(true);
-    }, 5000); // Show loader after 5 seconds
+    }, 5000);
 
     try {
       const currentQ = allQuestions[currentQuestionIndex];
@@ -69,50 +127,60 @@ function App() {
       const updatedAnswers = [...answers, newAnswer];
       setAnswers(updatedAnswers);
 
+      // Generate AI question after predefined questions
       if (currentQuestionIndex >= questionsData.predefinedQuestions.length - 1 &&
         allQuestions.length < 20) {
-        const response = await api.post('/generate-question', {
-          previousQA: updatedAnswers
-        });
 
-        if (response.data.question) {
-          const aiQuestion = {
-            id: allQuestions.length + 1,
-            ...response.data.question,
-            type: 'mcq'
-          };
-          setAllQuestions(prev => [...prev, aiQuestion]);
+        setIsGeneratingQuestion(true);
+        const success = await generateNextAIQuestion(updatedAnswers);
+
+        if (!success) {
+          throw new Error('Failed to generate next question. Please try again.');
         }
       }
 
+      // Proceed to next question with error handling
       if (currentQuestionIndex < allQuestions.length - 1) {
         setCurrentQuestionIndex(prev => prev + 1);
         setCurrentAnswer('');
       } else if (updatedAnswers.length >= 20) {
-        handleFinish(updatedAnswers);
+        await handleFinish(updatedAnswers);
       }
+
     } catch (err) {
       console.error('Error:', err);
-      setError('Failed to proceed to next question. Please try again.');
+      setError(err.message || 'An unexpected error occurred');
     } finally {
-      clearTimeout(loaderTimeout); // Clear the timeout
+      clearTimeout(loaderTimeout);
       setIsLoading(false);
       setShowLoader(false);
+      setIsGeneratingQuestion(false);
     }
   };
 
   const handleFinish = async (finalAnswers) => {
+    console.log('\n=== Starting Final Analysis ===');
+    console.log('Total Questions Answered:', finalAnswers.length);
+    console.log('All Questions and Answers:');
+    finalAnswers.forEach((qa, index) => {
+      console.log(`\nQ${index + 1}: ${qa.question}`);
+      console.log(`A${index + 1}: ${qa.answer}`);
+    });
+
     setIsAnalyzing(true);
     try {
       const response = await api.post('/analyze-answers', {
         answers: finalAnswers
       });
       setCareerResults(response.data.careers);
+      console.log('\nAnalysis Complete');
+      console.log('Career Results:', response.data.careers);
     } catch (err) {
       console.error('Error analyzing answers:', err);
       setError('Failed to analyze answers');
     } finally {
       setIsAnalyzing(false);
+      console.log('=== End of Analysis ===\n');
     }
   };
 
@@ -160,7 +228,11 @@ function App() {
       <div className="bg-white rounded-lg p-8 shadow-xl">
         <div className="flex flex-col items-center">
           <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-          <p className="mt-4 text-gray-700">Taking longer than expected...</p>
+          <p className="mt-4 text-gray-700">
+            {isGeneratingQuestion
+              ? "AI is generating your next question..."
+              : "Taking longer than expected..."}
+          </p>
           <div className="mt-3 flex space-x-1">
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
@@ -168,6 +240,36 @@ function App() {
           </div>
         </div>
       </div>
+    </div>
+  );
+
+  // Update the progress display in the header
+  const getProgressText = () => {
+    if (currentQuestionIndex < questionsData.predefinedQuestions.length) {
+      return `Predefined Question ${currentQuestionIndex + 1} of 10`;
+    } else {
+      return `AI Question ${currentQuestionIndex - 9} of 10`;
+    }
+  };
+
+  const ErrorMessage = ({ error, onRetry }) => (
+    <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-fade-in">
+      <div className="flex items-center">
+        <div className="flex-shrink-0">
+          <XCircle className="h-5 w-5 text-red-500" />
+        </div>
+        <div className="ml-3">
+          <p className="text-sm">{error}</p>
+        </div>
+      </div>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+        >
+          Try Again
+        </button>
+      )}
     </div>
   );
 
@@ -187,16 +289,16 @@ function App() {
               </div>
             </div>
             {!careerResults && (
-              <div className="flex items-center space-x-2">
-                <div className="h-2 w-32 bg-gray-200 rounded-full">
-                  <div
-                    className="h-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300"
-                    style={{ width: `${(currentQuestionIndex + 1) * 5}%` }}
-                  ></div>
+              <div className="flex flex-col items-end">
+                <div className="text-sm text-gray-600 mb-1">
+                  {getProgressText()}
                 </div>
-                <span className="text-sm text-gray-600">
-                  {currentQuestionIndex + 1}/20
-                </span>
+                <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"
+                    style={{ width: `${(currentQuestionIndex + 1) * 5}%` }}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -207,9 +309,13 @@ function App() {
           {showLoader && <LoadingSpinner />}
 
           {error && (
-            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-shake">
-              {error}
-            </div>
+            <ErrorMessage
+              error={error}
+              onRetry={() => {
+                setError(null);
+                handleNextQuestion();
+              }}
+            />
           )}
 
           {!careerResults && currentQuestionIndex < allQuestions.length && (
@@ -259,7 +365,7 @@ function App() {
                     {isLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Loading...
+                        {isGeneratingQuestion ? 'Generating...' : 'Loading...'}
                       </>
                     ) : currentQuestionIndex < 19 ? (
                       <>
@@ -356,16 +462,16 @@ function App() {
             </div>
           </div>
           {!careerResults && (
-            <div className="flex items-center space-x-2">
-              <div className="h-2 w-32 bg-gray-200 rounded-full">
-                <div
-                  className="h-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300"
-                  style={{ width: `${(currentQuestionIndex + 1) * 5}%` }}
-                ></div>
+            <div className="flex flex-col items-end">
+              <div className="text-sm text-gray-600 mb-1">
+                {getProgressText()}
               </div>
-              <span className="text-sm text-gray-600">
-                {currentQuestionIndex + 1}/20
-              </span>
+              <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"
+                  style={{ width: `${(currentQuestionIndex + 1) * 5}%` }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -376,9 +482,13 @@ function App() {
         {showLoader && <LoadingSpinner />}
 
         {error && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-shake">
-            {error}
-          </div>
+          <ErrorMessage
+            error={error}
+            onRetry={() => {
+              setError(null);
+              handleNextQuestion();
+            }}
+          />
         )}
 
         {!careerResults && currentQuestionIndex < allQuestions.length && (
@@ -428,7 +538,7 @@ function App() {
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Loading...
+                      {isGeneratingQuestion ? 'Generating...' : 'Loading...'}
                     </>
                   ) : currentQuestionIndex < 19 ? (
                     <>

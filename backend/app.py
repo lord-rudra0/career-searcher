@@ -4,11 +4,18 @@ import google.generativeai as genai
 import json
 import os
 import dotenv
+import re
 
 dotenv.load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # Configure Google API key
 api_key = os.getenv("GEMINI_API_KEY")
@@ -20,42 +27,92 @@ question_ai = genai.GenerativeModel("gemini-2.0-flash")
 summary_ai = genai.GenerativeModel("gemini-2.0-flash")
 career_ai = genai.GenerativeModel("gemini-2.0-flash")
 
+def extract_json_from_text(text):
+    """Extract JSON from text that might contain markdown or other content"""
+    # Try to find JSON pattern
+    json_match = re.search(r'\{[\s\S]*\}', text)
+    if json_match:
+        try:
+            return json.loads(json_match.group())
+        except:
+            return None
+    return None
+
 @app.route('/generate-question', methods=['POST'])
 def generate_question():
     try:
         data = request.json
         previous_qa = data.get('previousQA', [])
         
-        # Format previous Q&A for the AI
-        qa_context = "\n".join([f"Q: {qa['question']}\nA: {qa['answer']}" for qa in previous_qa])
+        # Log received data
+        print("\n=== Generating New Question ===")
+        print(f"Received {len(previous_qa)} previous Q&As:")
+        for i, qa in enumerate(previous_qa):
+            print(f"\nQ{i+1}: {qa['question']}")
+            print(f"A{i+1}: {qa['answer']}")
+        
+        # Format Q&A history
+        qa_history = "\n".join([
+            f"Question {i+1}: {qa['question']}\nAnswer: {qa['answer']}"
+            for i, qa in enumerate(previous_qa)
+        ])
+        
+        print("\nGenerating new question...")
         
         prompt = f"""Based on these previous responses:
-        {qa_context}
-        
-        Generate a new career-focused multiple-choice question.
-        Format as JSON:
-        {{
-            "question": "question text",
-            "options": ["option1", "option2", "option3", "option4"]
-        }}"""
 
+{qa_history}
+
+Generate ONE new career-focused multiple-choice question.
+
+IMPORTANT: Your response must be ONLY a JSON object in this exact format:
+{{
+    "question": "Your question text here",
+    "options": ["Option 1", "Option 2", "Option 3", "Option 4"]
+}}
+
+Requirements:
+1. Question must be unique and different from previous ones
+2. Build upon previous answers to explore deeper insights
+3. Focus on career-relevant traits, skills, or preferences
+4. Options must be distinct and career-relevant
+5. Do not include any additional text or explanations
+6. Return ONLY the JSON object"""
+
+        # Generate the response
         response = question_ai.generate_content(prompt)
+        response_text = response.text.strip()
         
+        # Try to parse the response
         try:
-            # Clean and parse the response
-            cleaned_text = response.text.strip()
-            if cleaned_text.startswith("```json"):
-                cleaned_text = cleaned_text[7:]
-            if cleaned_text.endswith("```"):
-                cleaned_text = cleaned_text[:-3]
-            new_question = json.loads(cleaned_text)
-            return jsonify({"question": new_question})
+            # First try direct JSON parsing
+            question_data = json.loads(response_text)
         except json.JSONDecodeError:
-            return jsonify({"error": "Failed to generate valid question"}), 500
+            # If direct parsing fails, try to extract JSON from the text
+            question_data = extract_json_from_text(response_text)
+            if not question_data:
+                raise ValueError("Failed to generate valid question format")
+
+        # Validate the response structure
+        if not isinstance(question_data, dict) or \
+           'question' not in question_data or \
+           'options' not in question_data or \
+           not isinstance(question_data['options'], list) or \
+           len(question_data['options']) != 4:
+            raise ValueError("Invalid question format")
+
+        # Log the generated question
+        print("\nGenerated Question:")
+        print(f"Question: {question_data['question']}")
+        print(f"Options: {question_data['options']}")
+        print("=== Generation Complete ===\n")
+
+        return jsonify({"question": question_data})
 
     except Exception as e:
-        print(f"Error generating question: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        print(f"\nError generating question: {str(e)}")
+        error_message = str(e) if str(e) else "Failed to generate question"
+        return jsonify({"error": error_message}), 500
 
 @app.route('/analyze-answers', methods=['POST'])
 def analyze_answers():
@@ -124,6 +181,10 @@ def list_models():
     except Exception as e:
         print(f"Error listing models: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
