@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrainCog } from 'lucide-react';
+import { BrainCog, Brain, ChevronRight, SkipForward } from 'lucide-react';
 import questionsData from './questions.json';
 import axios from 'axios';
 
@@ -99,23 +99,125 @@ function App() {
     }
   };
 
+  const handleSkipQuestion = () => {
+    setCurrentQuestionIndex(prev => prev + 1);
+    setCurrentAnswer('');
+    setError(null);
+  };
+
   if (careerResults) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-        <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-3xl font-bold text-center mb-8 text-indigo-800">Your Career Matches</h2>
-          <div className="space-y-6">
-            {careerResults.map((career, index) => (
-              <div key={index} className="bg-gradient-to-r from-indigo-50 to-blue-50 p-4 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-semibold text-indigo-900">{career.title}</h3>
-                  <span className="text-lg font-bold text-indigo-600">{career.match}%</span>
-                </div>
-                <p className="mt-2 text-gray-700">{career.description}</p>
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-50">
+        {/* Header */}
+        <header className="bg-white shadow-md py-4 px-6 fixed w-full top-0 z-50">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Brain className="h-8 w-8 text-blue-500" />
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Career Finder AI
+              </h1>
+            </div>
+            {!careerResults && (
+              <div className="text-sm text-gray-600">
+                Question {currentQuestionIndex + 1} of {Math.max(20, allQuestions.length)}
               </div>
-            ))}
+            )}
           </div>
-        </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-grow container mx-auto px-4 pt-24 pb-20">
+          {error && (
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-fade-in">
+              {error}
+            </div>
+          )}
+
+          {!careerResults && currentQuestionIndex < allQuestions.length && (
+            <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 transform transition-all duration-300 hover:shadow-xl animate-slide-up">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">
+                {allQuestions[currentQuestionIndex]?.question}
+              </h2>
+              <div className="space-y-3">
+                {allQuestions[currentQuestionIndex]?.options.map((option, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSelectAnswer(option)}
+                    className={`w-full p-4 text-left rounded-lg transition-all duration-200 transform hover:scale-102 ${currentAnswer === option
+                        ? 'bg-blue-500 text-white shadow-md'
+                        : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                      }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+              <div className="flex justify-between mt-8 space-x-4">
+                <button
+                  onClick={handleSkipQuestion}
+                  className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  <SkipForward className="w-4 h-4 mr-2" />
+                  Skip Question
+                </button>
+                <button
+                  onClick={handleNextQuestion}
+                  className="flex items-center px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50"
+                  disabled={!currentAnswer}
+                >
+                  {currentQuestionIndex < 19 ? (
+                    <>
+                      Next
+                      <ChevronRight className="w-4 h-4 ml-2" />
+                    </>
+                  ) : (
+                    'Finish'
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isAnalyzing && (
+            <div className="text-center py-20 animate-fade-in">
+              <BrainCog className="w-16 h-16 mx-auto text-blue-500 animate-spin" />
+              <p className="mt-4 text-xl text-gray-700">Analyzing your responses...</p>
+            </div>
+          )}
+
+          {careerResults && (
+            <div className="max-w-3xl mx-auto animate-slide-up">
+              <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
+                Your Career Matches
+              </h2>
+              {careerResults.map((career, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-lg shadow-md p-6 mb-6 transform transition-all duration-300 hover:shadow-lg"
+                  style={{ animationDelay: `${index * 150}ms` }}
+                >
+                  <h3 className="text-xl font-bold text-gray-800">{career.title}</h3>
+                  <div className="mt-2 mb-3 bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-1000"
+                      style={{ width: `${career.match}%` }}
+                    />
+                  </div>
+                  <p className="text-gray-600">{career.description}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </main>
+
+        {/* Footer */}
+        <footer className="bg-gray-800 text-white py-6 px-4">
+          <div className="max-w-6xl mx-auto text-center">
+            <p className="text-gray-400">
+              Powered by AI to help you find your perfect career path
+            </p>
+          </div>
+        </footer>
       </div>
     );
   }
@@ -123,57 +225,117 @@ function App() {
   const currentQuestion = allQuestions[currentQuestionIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-8">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-50">
+      {/* Header */}
+      <header className="bg-white shadow-md py-4 px-6 fixed w-full top-0 z-50">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Brain className="h-8 w-8 text-blue-500" />
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Career Finder AI
+            </h1>
+          </div>
+          {!careerResults && (
+            <div className="text-sm text-gray-600">
+              Question {currentQuestionIndex + 1} of {Math.max(20, allQuestions.length)}
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-grow container mx-auto px-4 pt-24 pb-20">
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-fade-in">
             {error}
           </div>
         )}
-        {isAnalyzing ? (
-          <div className="text-center">
-            <BrainCog className="w-16 h-16 mx-auto mb-4 text-indigo-600 animate-pulse" />
-            <h2 className="text-2xl font-bold text-indigo-900">Analyzing Your Responses...</h2>
-            <p className="mt-2 text-gray-600">Please wait while our AI processes your answers.</p>
-          </div>
-        ) : currentQuestion ? (
-          <>
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-indigo-900">Question {currentQuestionIndex + 1}</h2>
-                <span className="text-sm text-gray-500">
-                  {currentQuestionIndex + 1} of {Math.max(20, allQuestions.length)}
-                </span>
-              </div>
-              <p className="text-lg text-gray-700 mb-6">{currentQuestion.question}</p>
-              <div className="space-y-3">
-                {currentQuestion.options?.map((option, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSelectAnswer(option)}
-                    className={`w-full p-4 text-left rounded-lg transition-colors ${currentAnswer === option
-                      ? 'bg-indigo-600 text-white'
+
+        {!careerResults && currentQuestionIndex < allQuestions.length && (
+          <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 transform transition-all duration-300 hover:shadow-xl animate-slide-up">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">
+              {allQuestions[currentQuestionIndex]?.question}
+            </h2>
+            <div className="space-y-3">
+              {allQuestions[currentQuestionIndex]?.options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSelectAnswer(option)}
+                  className={`w-full p-4 text-left rounded-lg transition-all duration-200 transform hover:scale-102 ${currentAnswer === option
+                      ? 'bg-blue-500 text-white shadow-md'
                       : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                      }`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
+                    }`}
+                >
+                  {option}
+                </button>
+              ))}
             </div>
-            <button
-              onClick={handleNextQuestion}
-              disabled={!currentAnswer}
-              className={`w-full py-3 px-6 rounded-lg transition-colors ${currentAnswer
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-            >
-              {currentQuestionIndex < 19 ? 'Next Question' : 'Finish'}
-            </button>
-          </>
-        ) : null}
-      </div>
+            <div className="flex justify-between mt-8 space-x-4">
+              <button
+                onClick={handleSkipQuestion}
+                className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+              >
+                <SkipForward className="w-4 h-4 mr-2" />
+                Skip Question
+              </button>
+              <button
+                onClick={handleNextQuestion}
+                className="flex items-center px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50"
+                disabled={!currentAnswer}
+              >
+                {currentQuestionIndex < 19 ? (
+                  <>
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </>
+                ) : (
+                  'Finish'
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isAnalyzing && (
+          <div className="text-center py-20 animate-fade-in">
+            <BrainCog className="w-16 h-16 mx-auto text-blue-500 animate-spin" />
+            <p className="mt-4 text-xl text-gray-700">Analyzing your responses...</p>
+          </div>
+        )}
+
+        {careerResults && (
+          <div className="max-w-3xl mx-auto animate-slide-up">
+            <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
+              Your Career Matches
+            </h2>
+            {careerResults.map((career, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-lg shadow-md p-6 mb-6 transform transition-all duration-300 hover:shadow-lg"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                <h3 className="text-xl font-bold text-gray-800">{career.title}</h3>
+                <div className="mt-2 mb-3 bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-500 h-2 rounded-full transition-all duration-1000"
+                    style={{ width: `${career.match}%` }}
+                  />
+                </div>
+                <p className="text-gray-600">{career.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-800 text-white py-6 px-4">
+        <div className="max-w-6xl mx-auto text-center">
+          <p className="text-gray-400">
+            Powered by AI to help you find your perfect career path
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
