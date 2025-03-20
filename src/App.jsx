@@ -7,8 +7,10 @@ import {
   Rocket,
   Target,
   Compass,
-  Lightning,
-  Medal
+  Zap,
+  Award,
+  Sparkle,
+  Loader2
 } from 'lucide-react';
 import questionsData from './questions.json';
 import axios from 'axios';
@@ -30,6 +32,8 @@ function App() {
   const [careerResults, setCareerResults] = useState(null);
   const [allQuestions, setAllQuestions] = useState([]);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
 
   useEffect(() => {
     // Initialize with predefined questions
@@ -47,20 +51,26 @@ function App() {
       return;
     }
 
-    // Save current Q&A
-    const currentQ = allQuestions[currentQuestionIndex];
-    const newAnswer = {
-      question: currentQ.question,
-      answer: currentAnswer
-    };
+    setIsLoading(true);
+    setError(null);
 
-    const updatedAnswers = [...answers, newAnswer];
-    setAnswers(updatedAnswers);
+    // Set up loader timeout
+    const loaderTimeout = setTimeout(() => {
+      setShowLoader(true);
+    }, 5000); // Show loader after 5 seconds
 
-    // If we've completed predefined questions, start generating AI questions
-    if (currentQuestionIndex >= questionsData.predefinedQuestions.length - 1 &&
-      allQuestions.length < 20) {
-      try {
+    try {
+      const currentQ = allQuestions[currentQuestionIndex];
+      const newAnswer = {
+        question: currentQ.question,
+        answer: currentAnswer
+      };
+
+      const updatedAnswers = [...answers, newAnswer];
+      setAnswers(updatedAnswers);
+
+      if (currentQuestionIndex >= questionsData.predefinedQuestions.length - 1 &&
+        allQuestions.length < 20) {
         const response = await api.post('/generate-question', {
           previousQA: updatedAnswers
         });
@@ -73,25 +83,22 @@ function App() {
           };
           setAllQuestions(prev => [...prev, aiQuestion]);
         }
-      } catch (err) {
-        console.error('Error generating AI question:', err);
-        setError('Failed to generate next question');
-        return;
       }
-    }
 
-    // Move to next question or finish
-    if (currentQuestionIndex < allQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      setCurrentAnswer('');
-    } else if (updatedAnswers.length >= 20) {
-      handleFinish(updatedAnswers);
+      if (currentQuestionIndex < allQuestions.length - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+        setCurrentAnswer('');
+      } else if (updatedAnswers.length >= 20) {
+        handleFinish(updatedAnswers);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Failed to proceed to next question. Please try again.');
+    } finally {
+      clearTimeout(loaderTimeout); // Clear the timeout
+      setIsLoading(false);
+      setShowLoader(false);
     }
-
-    // Add these logs in handleNextQuestion
-    console.log('Current index:', currentQuestionIndex);
-    console.log('All questions:', allQuestions);
-    console.log('Predefined questions length:', questionsData.predefinedQuestions.length);
   };
 
   const handleFinish = async (finalAnswers) => {
@@ -109,10 +116,24 @@ function App() {
     }
   };
 
-  const handleSkipQuestion = () => {
-    setCurrentQuestionIndex(prev => prev + 1);
-    setCurrentAnswer('');
-    setError(null);
+  const handleSkipQuestion = async () => {
+    setIsLoading(true);
+
+    const loaderTimeout = setTimeout(() => {
+      setShowLoader(true);
+    }, 5000);
+
+    try {
+      if (currentQuestionIndex < allQuestions.length - 1) {
+        setCurrentQuestionIndex(prev => prev + 1);
+        setCurrentAnswer('');
+        setError(null);
+      }
+    } finally {
+      clearTimeout(loaderTimeout);
+      setIsLoading(false);
+      setShowLoader(false);
+    }
   };
 
   const LoadingAnimation = () => (
@@ -130,6 +151,23 @@ function App() {
         <Star className="w-6 h-6 text-blue-400 absolute bottom-0 left-1/2 transform -translate-x-1/2" />
       </div>
       <Rocket className="w-8 h-8 text-indigo-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+    </div>
+  );
+
+  // Loading animation components
+  const LoadingSpinner = () => (
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+      <div className="bg-white rounded-lg p-8 shadow-xl">
+        <div className="flex flex-col items-center">
+          <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+          <p className="mt-4 text-gray-700">Taking longer than expected...</p>
+          <div className="mt-3 flex space-x-1">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -166,6 +204,8 @@ function App() {
 
         {/* Main Content */}
         <main className="flex-grow container mx-auto px-4 pt-28 pb-20">
+          {showLoader && <LoadingSpinner />}
+
           {error && (
             <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-shake">
               {error}
@@ -186,10 +226,11 @@ function App() {
                     <button
                       key={index}
                       onClick={() => handleSelectAnswer(option)}
+                      disabled={isLoading}
                       className={`w-full p-4 text-left rounded-xl transition-all duration-300 transform hover:scale-102 hover:shadow-md flex items-center space-x-3 ${currentAnswer === option
                         ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
                         : 'bg-white hover:bg-gray-50 text-gray-700'
-                        }`}
+                        } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center ${currentAnswer === option ? 'bg-white/20' : 'bg-gray-100'
                         }`}>
@@ -202,17 +243,25 @@ function App() {
                 <div className="flex justify-between mt-8 space-x-4">
                   <button
                     onClick={handleSkipQuestion}
-                    className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 group"
+                    disabled={isLoading}
+                    className={`flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 group ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                   >
                     <SkipForward className="w-4 h-4 mr-2 group-hover:animate-bounce" />
                     Skip
                   </button>
                   <button
                     onClick={handleNextQuestion}
-                    className="flex items-center px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 disabled:opacity-50 group"
-                    disabled={!currentAnswer}
+                    disabled={!currentAnswer || isLoading}
+                    className={`flex items-center px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 group ${!currentAnswer || isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                   >
-                    {currentQuestionIndex < 19 ? (
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : currentQuestionIndex < 19 ? (
                       <>
                         Next
                         <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -230,7 +279,7 @@ function App() {
             <div className="text-center py-20 animate-fade-in">
               <div className="relative w-20 h-20 mx-auto mb-4">
                 <Compass className="w-20 h-20 text-blue-500 animate-spin-slow" />
-                <Lightning className="w-8 h-8 text-yellow-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                <Zap className="w-8 h-8 text-yellow-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
               </div>
               <p className="mt-4 text-xl text-gray-700">Analyzing your responses...</p>
               <LoadingAnimation />
@@ -240,7 +289,7 @@ function App() {
           {careerResults && (
             <div className="max-w-3xl mx-auto animate-slide-up">
               <div className="flex items-center justify-center mb-8 space-x-3">
-                <Medal className="w-8 h-8 text-yellow-400 animate-bounce" />
+                <Award className="w-8 h-8 text-yellow-400 animate-bounce" />
                 <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   Your Career Matches
                 </h2>
@@ -324,6 +373,8 @@ function App() {
 
       {/* Main Content */}
       <main className="flex-grow container mx-auto px-4 pt-28 pb-20">
+        {showLoader && <LoadingSpinner />}
+
         {error && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-shake">
             {error}
@@ -344,10 +395,11 @@ function App() {
                   <button
                     key={index}
                     onClick={() => handleSelectAnswer(option)}
+                    disabled={isLoading}
                     className={`w-full p-4 text-left rounded-xl transition-all duration-300 transform hover:scale-102 hover:shadow-md flex items-center space-x-3 ${currentAnswer === option
                       ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
                       : 'bg-white hover:bg-gray-50 text-gray-700'
-                      }`}
+                      } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center ${currentAnswer === option ? 'bg-white/20' : 'bg-gray-100'
                       }`}>
@@ -360,17 +412,25 @@ function App() {
               <div className="flex justify-between mt-8 space-x-4">
                 <button
                   onClick={handleSkipQuestion}
-                  className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 group"
+                  disabled={isLoading}
+                  className={`flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 group ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                 >
                   <SkipForward className="w-4 h-4 mr-2 group-hover:animate-bounce" />
                   Skip
                 </button>
                 <button
                   onClick={handleNextQuestion}
-                  className="flex items-center px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 disabled:opacity-50 group"
-                  disabled={!currentAnswer}
+                  disabled={!currentAnswer || isLoading}
+                  className={`flex items-center px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 group ${!currentAnswer || isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                 >
-                  {currentQuestionIndex < 19 ? (
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : currentQuestionIndex < 19 ? (
                     <>
                       Next
                       <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -388,7 +448,7 @@ function App() {
           <div className="text-center py-20 animate-fade-in">
             <div className="relative w-20 h-20 mx-auto mb-4">
               <Compass className="w-20 h-20 text-blue-500 animate-spin-slow" />
-              <Lightning className="w-8 h-8 text-yellow-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+              <Zap className="w-8 h-8 text-yellow-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
             </div>
             <p className="mt-4 text-xl text-gray-700">Analyzing your responses...</p>
             <LoadingAnimation />
@@ -398,7 +458,7 @@ function App() {
         {careerResults && (
           <div className="max-w-3xl mx-auto animate-slide-up">
             <div className="flex items-center justify-center mb-8 space-x-3">
-              <Medal className="w-8 h-8 text-yellow-400 animate-bounce" />
+              <Award className="w-8 h-8 text-yellow-400 animate-bounce" />
               <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 Your Career Matches
               </h2>

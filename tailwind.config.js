@@ -13,6 +13,7 @@ export default {
         'gradient': 'gradient 3s ease infinite',
         'width': 'width 1s ease-out',
         'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'spin': 'spin 1s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -49,6 +50,10 @@ export default {
         width: {
           '0%': { width: '0%' },
           '100%': { width: '100%' },
+        },
+        spin: {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' },
         },
       },
       scale: {
