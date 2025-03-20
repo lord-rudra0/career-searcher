@@ -1,0 +1,119 @@
+{
+  "predefinedQuestions": [
+    {
+      "id": 1,
+      "question": "What type of activities energize you the most?",
+      "type": "mcq",
+      "options": [
+        "Solving complex problems and puzzles",
+        "Creating art or expressing creativity",
+        "Helping and interacting with people",
+        "Working with physical objects or machines"
+      ]
+    },
+    {
+      "id": 2,
+      "question": "How do you prefer to approach problems?",
+      "type": "mcq",
+      "options": [
+        "Systematic and analytical thinking",
+        "Creative and intuitive solutions",
+        "Collaborative discussion with others",
+        "Hands-on experimentation"
+      ]
+    },
+    {
+      "id": 3,
+      "question": "Which subject area interests you the most?",
+      "type": "mcq",
+      "options": [
+        "Science and Mathematics",
+        "Arts and Humanities",
+        "Social Sciences and Communication",
+        "Technology and Engineering"
+      ]
+    },
+    {
+      "id": 4,
+      "question": "What's your ideal work environment?",
+      "type": "mcq",
+      "options": [
+        "Structured office setting",
+        "Creative studio or flexible space",
+        "Various locations with different people",
+        "Outdoor or hands-on environment"
+      ]
+    },
+    {
+      "id": 5,
+      "question": "How do you prefer to work?",
+      "type": "mcq",
+      "options": [
+        "Independently on focused tasks",
+        "In small collaborative teams",
+        "Leading and directing others",
+        "Flexible mix of solo and team work"
+      ]
+    },
+    {
+      "id": 6,
+      "question": "What motivates you most at work?",
+      "type": "mcq",
+      "options": [
+        "Achievement and recognition",
+        "Creative freedom and expression",
+        "Helping others and making impact",
+        "Learning and personal growth"
+      ]
+    },
+    {
+      "id": 7,
+      "question": "What's your preferred pace of work?",
+      "type": "mcq",
+      "options": [
+        "Fast-paced with multiple deadlines",
+        "Steady and methodical",
+        "Variable depending on projects",
+        "Relaxed with flexible schedules"
+      ]
+    },
+    {
+      "id": 8,
+      "question": "Which skill would you most like to develop?",
+      "type": "mcq",
+      "options": [
+        "Technical and analytical skills",
+        "Creative and design abilities",
+        "Leadership and management",
+        "Communication and interpersonal skills"
+      ]
+    },
+    {
+      "id": 9,
+      "question": "What type of impact do you want to make?",
+      "type": "mcq",
+      "options": [
+        "Innovating and advancing technology",
+        "Creating and inspiring others",
+        "Helping people and communities",
+        "Building and improving systems"
+      ]
+    },
+    {
+      "id": 10,
+      "question": "What's your preferred work-life balance?",
+      "type": "mcq",
+      "options": [
+        "Traditional 9-5 with clear boundaries",
+        "Flexible hours with remote options",
+        "Project-based with varying schedules",
+        "Standard hours with occasional overtime"
+      ]
+    }
+  ]
+}
+
+
+
+
+
