@@ -5,17 +5,14 @@ import json
 import os
 import dotenv
 import re
+from googlesearch import search
+import requests
+from bs4 import BeautifulSoup
 
 dotenv.load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={
-    r"/*": {
-        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
-    }
-})
+CORS(app)
 
 # Configure Google API key
 api_key = os.getenv("GEMINI_API_KEY")
@@ -182,9 +179,196 @@ def list_models():
         print(f"Error listing models: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({"status": "healthy"}), 200
+@app.route('/web-search', methods=['POST'])
+def web_search():
+    try:
+        data = request.json
+        careers = data.get('careers', [])
+
+        # Create search query based on career matches
+        search_terms = []
+        for career in careers[:2]:  # Use top 2 career matches
+            search_terms.extend([
+                career['title'],
+                career.get('description', '').split('.')[0]  # First sentence only
+            ])
+
+        # Combine search terms
+        search_query = f"alternative careers similar to {' '.join(search_terms)} career path requirements skills"
+
+        # Perform web search
+        search_results = []
+        for result in search(search_query, num_results=5):
+            try:
+                # Fetch webpage content
+                response = requests.get(result, timeout=5)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # Extract relevant information
+                title = soup.title.string if soup.title else "Career Option"
+                description = soup.find('meta', {'name': 'description'})
+                description = description['content'] if description else "No description available"
+
+                # Calculate relevance score based on keyword matching
+                relevance = calculate_relevance(
+                    title + " " + description,
+                    [career['title'] for career in careers]
+                )
+
+                if relevance > 70:  # Only include relevant results
+                    search_results.append({
+                        'title': clean_title(title),
+                        'description': clean_description(description),
+                        'link': result,
+                        'relevance': relevance
+                    })
+            except Exception as e:
+                print(f"Error processing search result: {str(e)}")
+                continue
+
+        return jsonify({
+            'results': sorted(search_results, key=lambda x: x['relevance'], reverse=True)
+        })
+
+    except Exception as e:
+        print(f"Web search error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/search-web-careers', methods=['POST'])
+def search_web_careers():
+    try:
+        data = request.json
+        analysis = data.get('analysis', '')
+
+        # Extract key terms from analysis
+        key_terms = extract_key_terms(analysis)
+        
+        # Create search query
+        search_query = f"career paths for people with skills in {key_terms} job requirements and description"
+
+        careers_found = []
+        
+        # Perform web search
+        for url in search(search_query, num_results=8):
+            try:
+                # Fetch webpage content
+                response = requests.get(url, timeout=5)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # Extract career information
+                career_info = extract_career_info(soup, analysis)
+                
+                if career_info and career_info['matchScore'] > 60:
+                    careers_found.append(career_info)
+                    
+            except Exception as e:
+                print(f"Error processing result: {str(e)}")
+                continue
+
+        # Sort by match score and return top results
+        careers_found.sort(key=lambda x: x['matchScore'], reverse=True)
+        return jsonify({'careers': careers_found[:5]})
+
+    except Exception as e:
+        print(f"Web career search error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+def calculate_relevance(text, career_titles):
+    """Calculate relevance score based on keyword matching"""
+    text = text.lower()
+    score = 0
+    
+    # Keywords to look for
+    keywords = set()
+    for title in career_titles:
+        keywords.update(title.lower().split())
+        
+    # Calculate score based on keyword presence
+    for keyword in keywords:
+        if keyword in text:
+            score += 20
+            
+    return min(98, max(70, score))  # Keep score between 70-98
+
+def clean_title(title):
+    """Clean and format the title"""
+    if not title:
+        return "Career Option"
+    return title[:100].strip()
+
+def clean_description(description):
+    """Clean and format the description"""
+    if not description:
+        return "No description available"
+    return description[:200].strip() + "..."
+
+def extract_key_terms(analysis):
+    """Extract key terms from analysis text"""
+    # Remove common words and keep important terms
+    common_words = {'and', 'or', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'with'}
+    words = analysis.lower().split()
+    key_terms = [word for word in words if word not in common_words]
+    return ' '.join(key_terms[:10])  # Use top 10 terms
+
+def extract_career_info(soup, analysis):
+    """Extract career information from webpage"""
+    try:
+        # Get title
+        title = soup.find('h1')
+        if not title:
+            title = soup.find('title')
+        title = title.text.strip() if title else "Career Option"
+        
+        # Get description
+        description = soup.find('meta', {'name': 'description'})
+        if description:
+            description = description['content']
+        else:
+            # Try to find first paragraph
+            description = soup.find('p')
+            description = description.text if description else "No description available"
+        
+        # Extract skills (look for lists or sections containing "skills")
+        skills = []
+        skill_sections = soup.find_all(['ul', 'ol'], string=re.compile('skill', re.I))
+        for section in skill_sections[:1]:  # Take first skills section
+            skills.extend([li.text.strip() for li in section.find_all('li')][:5])
+        
+        # Calculate match score
+        match_score = calculate_match_score(title + " " + description, analysis)
+        
+        return {
+            'title': clean_text(title, 100),
+            'description': clean_text(description, 200),
+            'keySkills': skills if skills else None,
+            'matchScore': match_score,
+            'sourceLink': soup.url
+        }
+    except Exception as e:
+        print(f"Error extracting career info: {str(e)}")
+        return None
+
+def calculate_match_score(text, analysis):
+    """Calculate match score between text and analysis"""
+    text = text.lower()
+    analysis = analysis.lower()
+    
+    # Extract key terms from analysis
+    analysis_terms = set(analysis.split())
+    
+    # Count matching terms
+    matches = sum(1 for term in analysis_terms if term in text)
+    
+    # Calculate score (base 60, up to 95)
+    score = 60 + (matches * 35 / len(analysis_terms))
+    return min(95, max(60, round(score)))
+
+def clean_text(text, max_length):
+    """Clean and truncate text"""
+    text = re.sub(r'\s+', ' ', text).strip()
+    if len(text) > max_length:
+        text = text[:max_length] + "..."
+    return text
 
 if __name__ == '__main__':
     app.run(debug=True)

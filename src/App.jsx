@@ -11,7 +11,10 @@ import {
   Award,
   Sparkle,
   Loader2,
-  XCircle
+  Search,
+  Globe,
+  ExternalLink,
+  BookOpen
 } from 'lucide-react';
 import questionsData from './questions.json';
 import axios from 'axios';
@@ -36,6 +39,10 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
   const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
+  const [webSearchResults, setWebSearchResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [webCareerResults, setWebCareerResults] = useState(null);
+  const [isWebSearching, setIsWebSearching] = useState(false);
 
   useEffect(() => {
     // Initialize with predefined questions
@@ -47,16 +54,16 @@ function App() {
     setError(null);
   };
 
-  const generateNextAIQuestion = async (previousAnswers, retryCount = 0) => {
+  const generateNextAIQuestion = async (previousAnswers) => {
     try {
-      // Check if server is reachable
-      const isServerAvailable = await checkServerConnection();
-      if (!isServerAvailable) {
-        throw new Error('Unable to connect to server');
-      }
-
+      // Log previous questions and answers
       console.log('=== Generating New AI Question ===');
-      console.log('Based on previous Q&A:', previousAnswers);
+      console.log('Based on previous Q&A:');
+      previousAnswers.forEach((qa, index) => {
+        console.log(`\nQ${index + 1}: ${qa.question}`);
+        console.log(`A${index + 1}: ${qa.answer}`);
+      });
+      console.log('\n-------------------');
 
       const response = await api.post('/generate-question', {
         previousQA: previousAnswers
@@ -74,32 +81,19 @@ function App() {
           options: response.data.question.options
         };
 
-        console.log('\nNew AI Generated Question:', aiQuestion);
+        // Log the newly generated question
+        console.log('\nNew AI Generated Question:');
+        console.log('Question:', aiQuestion.question);
+        console.log('Options:', aiQuestion.options);
+        console.log('=== End of Generation ===\n');
+
         setAllQuestions(prev => [...prev, aiQuestion]);
         return true;
       }
       return false;
-
     } catch (err) {
       console.error('Error generating AI question:', err);
-
-      // Retry logic for connection issues
-      if (retryCount < 3 && (err.message.includes('disconnected') || err.message.includes('connect'))) {
-        console.log(`Retrying... Attempt ${retryCount + 1} of 3`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
-        return generateNextAIQuestion(previousAnswers, retryCount + 1);
-      }
-
       setError(err.message || 'Failed to generate next question');
-      return false;
-    }
-  };
-
-  const checkServerConnection = async () => {
-    try {
-      await api.get('/health'); // Add a health check endpoint to your backend
-      return true;
-    } catch (err) {
       return false;
     }
   };
@@ -113,16 +107,25 @@ function App() {
     setIsLoading(true);
     setError(null);
 
-    let loaderTimeout = setTimeout(() => {
+    const loaderTimeout = setTimeout(() => {
       setShowLoader(true);
     }, 5000);
 
     try {
+      // Log current question and answer
+      console.log('\n=== Processing Next Question ===');
+      console.log('Current Question Index:', currentQuestionIndex);
+      console.log('Total Questions:', allQuestions.length);
+
       const currentQ = allQuestions[currentQuestionIndex];
       const newAnswer = {
         question: currentQ.question,
         answer: currentAnswer
       };
+
+      console.log('\nSaving Current Answer:');
+      console.log('Question:', currentQ.question);
+      console.log('Selected Answer:', currentAnswer);
 
       const updatedAnswers = [...answers, newAnswer];
       setAnswers(updatedAnswers);
@@ -130,6 +133,10 @@ function App() {
       // Generate AI question after predefined questions
       if (currentQuestionIndex >= questionsData.predefinedQuestions.length - 1 &&
         allQuestions.length < 20) {
+
+        console.log('\nStarting AI Question Generation');
+        console.log('Predefined Questions Completed:', questionsData.predefinedQuestions.length);
+        console.log('Current Total Questions:', allQuestions.length);
 
         setIsGeneratingQuestion(true);
         const success = await generateNextAIQuestion(updatedAnswers);
@@ -139,12 +146,14 @@ function App() {
         }
       }
 
-      // Proceed to next question with error handling
+      // Proceed to next question
       if (currentQuestionIndex < allQuestions.length - 1) {
+        console.log('\nMoving to next question');
         setCurrentQuestionIndex(prev => prev + 1);
         setCurrentAnswer('');
       } else if (updatedAnswers.length >= 20) {
-        await handleFinish(updatedAnswers);
+        console.log('\nAll questions completed, proceeding to analysis');
+        handleFinish(updatedAnswers);
       }
 
     } catch (err) {
@@ -155,6 +164,7 @@ function App() {
       setIsLoading(false);
       setShowLoader(false);
       setIsGeneratingQuestion(false);
+      console.log('=== End of Processing ===\n');
     }
   };
 
@@ -201,6 +211,53 @@ function App() {
       clearTimeout(loaderTimeout);
       setIsLoading(false);
       setShowLoader(false);
+    }
+  };
+
+  const handleWebSearch = async () => {
+    if (!careerResults) return;
+
+    setIsSearching(true);
+    setError(null);
+
+    try {
+      const response = await api.post('/web-search', {
+        careers: careerResults,
+      });
+
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+
+      setWebSearchResults(response.data.results);
+    } catch (err) {
+      console.error('Web search error:', err);
+      setError('Failed to perform web search');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleWebCareerSearch = async () => {
+    setIsWebSearching(true);
+    setError(null);
+
+    try {
+      // Send the analysis summary to backend for web search
+      const response = await api.post('/search-web-careers', {
+        analysis: careerResults.analysis // This is the brief explanation/analysis
+      });
+
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+
+      setWebCareerResults(response.data.careers);
+    } catch (err) {
+      console.error('Web career search error:', err);
+      setError('Failed to search additional careers');
+    } finally {
+      setIsWebSearching(false);
     }
   };
 
@@ -252,27 +309,6 @@ function App() {
     }
   };
 
-  const ErrorMessage = ({ error, onRetry }) => (
-    <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-fade-in">
-      <div className="flex items-center">
-        <div className="flex-shrink-0">
-          <XCircle className="h-5 w-5 text-red-500" />
-        </div>
-        <div className="ml-3">
-          <p className="text-sm">{error}</p>
-        </div>
-      </div>
-      {onRetry && (
-        <button
-          onClick={onRetry}
-          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
-        >
-          Try Again
-        </button>
-      )}
-    </div>
-  );
-
   if (careerResults) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
@@ -309,13 +345,9 @@ function App() {
           {showLoader && <LoadingSpinner />}
 
           {error && (
-            <ErrorMessage
-              error={error}
-              onRetry={() => {
-                setError(null);
-                handleNextQuestion();
-              }}
-            />
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-shake">
+              {error}
+            </div>
           )}
 
           {!careerResults && currentQuestionIndex < allQuestions.length && (
@@ -393,39 +425,192 @@ function App() {
           )}
 
           {careerResults && (
-            <div className="max-w-3xl mx-auto animate-slide-up">
-              <div className="flex items-center justify-center mb-8 space-x-3">
-                <Award className="w-8 h-8 text-yellow-400 animate-bounce" />
-                <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  Your Career Matches
-                </h2>
-              </div>
-              {careerResults.map((career, index) => (
-                <div
-                  key={index}
-                  className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 transform transition-all duration-300 hover:shadow-xl hover:scale-102"
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
-                  <h3 className="text-xl font-bold text-gray-800 flex items-center">
-                    <Star className="w-5 h-5 text-yellow-400 mr-2" />
-                    {career.title}
-                  </h3>
-                  <div className="mt-3 mb-3">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-gray-600">Match Score</span>
-                      <span className="text-sm font-bold text-blue-600">{career.match}%</span>
+            <>
+              <div className="max-w-3xl mx-auto animate-slide-up">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center space-x-3">
+                    <Award className="w-8 h-8 text-yellow-400 animate-bounce" />
+                    <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                      Your Career Matches
+                    </h2>
+                  </div>
+                  <button
+                    onClick={handleWebSearch}
+                    disabled={isSearching}
+                    className="flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-gray-700 hover:text-blue-600"
+                  >
+                    {isSearching ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Searching...
+                      </>
+                    ) : (
+                      <>
+                        <Globe className="w-4 h-4 mr-2" />
+                        Find More Careers
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {careerResults.map((career, index) => (
+                  <div
+                    key={index}
+                    className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 transform transition-all duration-300 hover:shadow-xl hover:scale-102"
+                    style={{ animationDelay: `${index * 150}ms` }}
+                  >
+                    <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                      <Star className="w-5 h-5 text-yellow-400 mr-2" />
+                      {career.title}
+                    </h3>
+                    <div className="mt-3 mb-3">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm text-gray-600">Match Score</span>
+                        <span className="text-sm font-bold text-blue-600">{career.match}%</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 animate-width"
+                          style={{ width: `${career.match}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <p className="text-gray-600">{career.description}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Web Search Results Section */}
+              {webSearchResults && (
+                <div className="max-w-3xl mx-auto mt-12 animate-slide-up">
+                  <div className="flex items-center space-x-3 mb-8">
+                    <Search className="w-7 h-7 text-blue-500" />
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      Additional Career Suggestions
+                    </h2>
+                  </div>
+
+                  <div className="space-y-6">
+                    {webSearchResults.map((result, index) => (
                       <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 animate-width"
-                        style={{ width: `${career.match}%` }}
-                      />
+                        key={index}
+                        className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300"
+                        style={{ animationDelay: `${index * 150}ms` }}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            {result.title}
+                          </h3>
+                          <span className="text-sm text-blue-600 font-medium">
+                            {result.relevance}% Match
+                          </span>
+                        </div>
+                        <p className="text-gray-600 mb-3">{result.description}</p>
+                        {result.link && (
+                          <a
+                            href={result.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center text-sm text-blue-500 hover:text-blue-700"
+                          >
+                            Learn More
+                            <ExternalLink className="w-3 h-3 ml-1" />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Web Search Button - Centered and Prominent */}
+              <div className="max-w-3xl mx-auto mt-8 text-center">
+                <button
+                  onClick={handleWebCareerSearch}
+                  disabled={isWebSearching}
+                  className="group relative inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 disabled:opacity-50"
+                >
+                  {isWebSearching ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Searching Web...
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-5 h-5 mr-2 group-hover:animate-pulse" />
+                      Discover More Careers Online
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Web Search Results Section */}
+              {webCareerResults && (
+                <div className="max-w-3xl mx-auto mt-12 mb-8">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 animate-fade-in">
+                    <div className="flex items-center space-x-3 mb-6">
+                      <BookOpen className="w-6 h-6 text-blue-500" />
+                      <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        Web Career Suggestions
+                      </h2>
+                    </div>
+
+                    <div className="space-y-6">
+                      {webCareerResults.map((career, index) => (
+                        <div
+                          key={index}
+                          className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300 animate-slide-up"
+                          style={{ animationDelay: `${index * 150}ms` }}
+                        >
+                          <div className="flex items-start justify-between">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                              {career.title}
+                            </h3>
+                            <span className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm font-medium">
+                              {career.matchScore}% Match
+                            </span>
+                          </div>
+
+                          <p className="mt-3 text-gray-600">
+                            {career.description}
+                          </p>
+
+                          {career.keySkills && (
+                            <div className="mt-3">
+                              <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                                Key Skills:
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {career.keySkills.map((skill, skillIndex) => (
+                                  <span
+                                    key={skillIndex}
+                                    className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-sm"
+                                  >
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {career.sourceLink && (
+                            <a
+                              href={career.sourceLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center mt-4 text-blue-500 hover:text-blue-700 transition-colors"
+                            >
+                              Learn More
+                              <ExternalLink className="w-4 h-4 ml-1" />
+                            </a>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <p className="text-gray-600">{career.description}</p>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </main>
 
@@ -482,13 +667,9 @@ function App() {
         {showLoader && <LoadingSpinner />}
 
         {error && (
-          <ErrorMessage
-            error={error}
-            onRetry={() => {
-              setError(null);
-              handleNextQuestion();
-            }}
-          />
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-shake">
+            {error}
+          </div>
         )}
 
         {!careerResults && currentQuestionIndex < allQuestions.length && (
@@ -566,39 +747,192 @@ function App() {
         )}
 
         {careerResults && (
-          <div className="max-w-3xl mx-auto animate-slide-up">
-            <div className="flex items-center justify-center mb-8 space-x-3">
-              <Award className="w-8 h-8 text-yellow-400 animate-bounce" />
-              <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Your Career Matches
-              </h2>
-            </div>
-            {careerResults.map((career, index) => (
-              <div
-                key={index}
-                className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 transform transition-all duration-300 hover:shadow-xl hover:scale-102"
-                style={{ animationDelay: `${index * 150}ms` }}
-              >
-                <h3 className="text-xl font-bold text-gray-800 flex items-center">
-                  <Star className="w-5 h-5 text-yellow-400 mr-2" />
-                  {career.title}
-                </h3>
-                <div className="mt-3 mb-3">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm text-gray-600">Match Score</span>
-                    <span className="text-sm font-bold text-blue-600">{career.match}%</span>
+          <>
+            <div className="max-w-3xl mx-auto animate-slide-up">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center space-x-3">
+                  <Award className="w-8 h-8 text-yellow-400 animate-bounce" />
+                  <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    Your Career Matches
+                  </h2>
+                </div>
+                <button
+                  onClick={handleWebSearch}
+                  disabled={isSearching}
+                  className="flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-gray-700 hover:text-blue-600"
+                >
+                  {isSearching ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-4 h-4 mr-2" />
+                      Find More Careers
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {careerResults.map((career, index) => (
+                <div
+                  key={index}
+                  className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 transform transition-all duration-300 hover:shadow-xl hover:scale-102"
+                  style={{ animationDelay: `${index * 150}ms` }}
+                >
+                  <h3 className="text-xl font-bold text-gray-800 flex items-center">
+                    <Star className="w-5 h-5 text-yellow-400 mr-2" />
+                    {career.title}
+                  </h3>
+                  <div className="mt-3 mb-3">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-sm text-gray-600">Match Score</span>
+                      <span className="text-sm font-bold text-blue-600">{career.match}%</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 animate-width"
+                        style={{ width: `${career.match}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <p className="text-gray-600">{career.description}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Web Search Results Section */}
+            {webSearchResults && (
+              <div className="max-w-3xl mx-auto mt-12 animate-slide-up">
+                <div className="flex items-center space-x-3 mb-8">
+                  <Search className="w-7 h-7 text-blue-500" />
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Additional Career Suggestions
+                  </h2>
+                </div>
+
+                <div className="space-y-6">
+                  {webSearchResults.map((result, index) => (
                     <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 animate-width"
-                      style={{ width: `${career.match}%` }}
-                    />
+                      key={index}
+                      className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300"
+                      style={{ animationDelay: `${index * 150}ms` }}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {result.title}
+                        </h3>
+                        <span className="text-sm text-blue-600 font-medium">
+                          {result.relevance}% Match
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mb-3">{result.description}</p>
+                      {result.link && (
+                        <a
+                          href={result.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-sm text-blue-500 hover:text-blue-700"
+                        >
+                          Learn More
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Web Search Button - Centered and Prominent */}
+            <div className="max-w-3xl mx-auto mt-8 text-center">
+              <button
+                onClick={handleWebCareerSearch}
+                disabled={isWebSearching}
+                className="group relative inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 disabled:opacity-50"
+              >
+                {isWebSearching ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Searching Web...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-5 h-5 mr-2 group-hover:animate-pulse" />
+                    Discover More Careers Online
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Web Search Results Section */}
+            {webCareerResults && (
+              <div className="max-w-3xl mx-auto mt-12 mb-8">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 animate-fade-in">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <BookOpen className="w-6 h-6 text-blue-500" />
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                      Web Career Suggestions
+                    </h2>
+                  </div>
+
+                  <div className="space-y-6">
+                    {webCareerResults.map((career, index) => (
+                      <div
+                        key={index}
+                        className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300 animate-slide-up"
+                        style={{ animationDelay: `${index * 150}ms` }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            {career.title}
+                          </h3>
+                          <span className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm font-medium">
+                            {career.matchScore}% Match
+                          </span>
+                        </div>
+
+                        <p className="mt-3 text-gray-600">
+                          {career.description}
+                        </p>
+
+                        {career.keySkills && (
+                          <div className="mt-3">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                              Key Skills:
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                              {career.keySkills.map((skill, skillIndex) => (
+                                <span
+                                  key={skillIndex}
+                                  className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-sm"
+                                >
+                                  {skill}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {career.sourceLink && (
+                          <a
+                            href={career.sourceLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center mt-4 text-blue-500 hover:text-blue-700 transition-colors"
+                          >
+                            Learn More
+                            <ExternalLink className="w-4 h-4 ml-1" />
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <p className="text-gray-600">{career.description}</p>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </main>
 
