@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import questionsData from './questions.json';
 import api from './services/api';
+import CareerRoadmap from './components/CareerRoadmap';
 
 function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -313,6 +314,65 @@ function App() {
     }
   };
 
+  const CareerSection = ({ title, careers, icon: Icon }) => {
+    // Add validation for careers array
+    if (!careers || !Array.isArray(careers)) {
+        return null;
+    }
+
+    return (
+        <div className="mb-8 animate-fade-in">
+            <h2 className="text-2xl font-bold mb-4 flex items-center">
+                <Icon className="w-6 h-6 mr-2" />
+                {title}
+            </h2>
+            <div className="space-y-6">
+                {careers.map((career, index) => {
+                    // Ensure career object has all required properties
+                    const careerData = {
+                        ...career,
+                        roadmap: career.roadmap || [
+                            "Entry Level: Required skills and certifications",
+                            "Mid Level: Advanced skills and experience",
+                            "Senior Level: Expert knowledge and leadership"
+                        ],
+                        colleges: career.colleges || [
+                            {
+                                name: "Recommended University",
+                                program: "Related Degree Program",
+                                duration: "4 years",
+                                location: "Various Locations"
+                            }
+                        ]
+                    };
+
+                    return (
+                        <div 
+                            key={index}
+                            className="bg-white rounded-lg shadow-md p-6 transform hover:scale-102 transition-all duration-200"
+                            style={{ animationDelay: `${index * 200}ms` }}
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-xl font-semibold text-blue-600">
+                                    {careerData.title || 'Career Option'}
+                                </h3>
+                                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
+                                    {careerData.match || 0}% Match
+                                </span>
+                            </div>
+                            <p className="text-gray-600 mb-4">
+                                {careerData.description || 'No description available'}
+                            </p>
+                            
+                            <CareerRoadmap career={careerData} />
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+  };
+
   if (careerResults) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
@@ -430,6 +490,20 @@ function App() {
 
           {careerResults && (
             <>
+              <CareerSection 
+                title="AI-Generated Career Recommendations" 
+                careers={careerResults} 
+                icon={Sparkles}
+              />
+              
+              {pdfCareerResults && (
+                <CareerSection 
+                  title="PDF-Based Career Matches" 
+                  careers={pdfCareerResults} 
+                  icon={BookOpen}
+                />
+              )}
+
               <div className="max-w-3xl mx-auto animate-slide-up">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center space-x-3">
@@ -773,6 +847,20 @@ function App() {
 
         {careerResults && (
           <>
+            <CareerSection 
+              title="AI-Generated Career Recommendations" 
+              careers={careerResults} 
+              icon={Sparkles}
+            />
+            
+            {pdfCareerResults && (
+              <CareerSection 
+                title="PDF-Based Career Matches" 
+                careers={pdfCareerResults} 
+                icon={BookOpen}
+              />
+            )}
+
             <div className="max-w-3xl mx-auto animate-slide-up">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center space-x-3">

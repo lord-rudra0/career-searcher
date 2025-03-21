@@ -165,19 +165,31 @@ def analyze_answers():
         # Step 2: Generate career recommendations with the second AI
         career_prompt = f"""Based on this analysis:
         {detailed_analysis}
-         ]
-        Each match_percentage should be defined by the person's answer to the question amd from the analysis not the random number
         
         Recommend 5 best-matching careers. Format as JSON array:
         [
             {{
                 "title": "Career Title",
-                "match": match_percentage  with one of 95 to 100 and other gap of 5 to 10 in each other , 
-                "description": "Why this career matches"
+                "match": match_percentage,
+                "description": "Why this career matches",
+                "roadmap": [
+                    "Entry Level: Required skills and certifications",
+                    "Mid Level: Advanced skills and experience",
+                    "Senior Level: Expert knowledge and leadership"
+                ],
+                "colleges": [
+                    {{
+                        "name": "College/University Name",
+                        "program": "Relevant Program",
+                        "duration": "Program Duration",
+                        "location": "Location"
+                    }}
+                ]
             }}
         ]
-        Each match_percentage should be between 75-100
-        ."""
+        Include 3-4 top colleges/universities for each career.
+        Each match_percentage should be between 75-100.
+        """
 
         career_response = career_ai.generate_content(career_prompt)
         
