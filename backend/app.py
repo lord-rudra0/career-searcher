@@ -125,7 +125,36 @@ def analyze_answers():
         1. Key strengths
         2. Work preferences
         3. Personality traits
-        4. Skill inclinations"""
+        4. Skill inclinations
+        5. Career goals
+        6. Education and training
+        7. Work experience
+        8. Hobbies and interests
+        9. Values and priorities
+        10. Personal development
+        11. Career aspirations
+        12. Life goals
+        13. Work-life balance
+        14. Stress tolerance
+        15. Adaptability
+        16. Leadership potential
+        17. Teamwork skills
+        18. Communication skills
+        19. Conflict resolution
+        20. Problem-solving
+        21. Decision-making
+        22. Creativity
+        23. Innovation
+        24. Time management
+        25. Work-related stress
+        26. Work-related anxiety
+        27. Work-related depression
+        28. Work-related burnout
+        29. Work-related motivation
+        30. Work-related satisfaction
+        
+        
+        """
 
         analysis_response = summary_ai.generate_content(analysis_prompt)
         detailed_analysis = analysis_response.text
