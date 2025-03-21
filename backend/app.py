@@ -74,7 +74,9 @@ Requirements:
 3. Focus on career-relevant traits, skills, or preferences
 4. Options must be distinct and career-relevant
 5. Do not include any additional text or explanations
-6. Return ONLY the JSON object"""
+6. Give the question for the person to answer so if user answer then next ai can use that answer to generate the next question
+7. generate that type of question so we can easily identify the person's career path    
+8. Return ONLY the JSON object"""
 
         # Generate the response
         response = question_ai.generate_content(prompt)
@@ -163,15 +165,19 @@ def analyze_answers():
         career_prompt = f"""Based on this analysis:
         {detailed_analysis}
         
+         ]
+        Each match_percentage should be defined by the person's answer to the question amd from the analysis not the random number
+        
         Recommend 5 best-matching careers. Format as JSON array:
         [
             {{
                 "title": "Career Title",
-                "match": match_percentage,
+                "match": match_percentage  with one of 95 to 100 and other gap of 5 to 10 in each other , 
                 "description": "Why this career matches"
             }}
         ]
-        Each match_percentage should be between 85-98."""
+        Each match_percentage should be between 75-100
+        ."""
 
         career_response = career_ai.generate_content(career_prompt)
         
