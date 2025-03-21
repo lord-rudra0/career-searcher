@@ -17,16 +17,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import questionsData from './questions.json';
-import axios from 'axios';
-
-// Create axios instance with base URL and timeout
-const api = axios.create({
-  baseURL: 'http://localhost:5000',
-  timeout: 30000, // 30 seconds timeout
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
+import api from './services/api';
 
 function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -66,20 +57,15 @@ function App() {
       });
       console.log('\n-------------------');
 
-      const response = await api.post('/generate-question', {
-        previousQA: previousAnswers
-      });
+      // Use api instead of apiInstance
+      const response = await api.generateQuestion(previousAnswers);
 
-      if (response.data.error) {
-        throw new Error(response.data.error);
-      }
-
-      if (response.data.question) {
+      if (response && response.question) {
         const aiQuestion = {
           id: allQuestions.length + 1,
-          question: response.data.question.question,
+          question: response.question.question,
           type: 'mcq',
-          options: response.data.question.options
+          options: response.question.options
         };
 
         // Log the newly generated question
@@ -94,7 +80,7 @@ function App() {
       return false;
     } catch (err) {
       console.error('Error generating AI question:', err);
-      setError(err.message || 'Failed to generate next question');
+      setError('Failed to generate next question. Please try again.');
       return false;
     }
   };
@@ -179,21 +165,41 @@ function App() {
     });
 
     setIsAnalyzing(true);
-    try {
-      const response = await api.post('/analyze-answers', {
-        answers: finalAnswers
-      });
-      setCareerResults(response.data.ai_generated_careers);
-      setPdfCareerResults(response.data.pdf_based_careers);
-      console.log('\nAnalysis Complete');
-      console.log('Career Results:', response.data.ai_generated_careers);
-    } catch (err) {
-      console.error('Error analyzing answers:', err);
-      setError('Failed to analyze answers');
-    } finally {
-      setIsAnalyzing(false);
-      console.log('=== End of Analysis ===\n');
+    let retryCount = 0;
+    const maxRetries = 2;
+
+    while (retryCount <= maxRetries) {
+      try {
+        console.log('Attempting analysis...', { attempt: retryCount + 1 });
+        const response = await api.analyzeAnswers(finalAnswers);
+        
+        if (!response.ai_generated_careers || !response.pdf_based_careers) {
+          throw new Error('Invalid response format');
+        }
+        
+        setCareerResults(response.ai_generated_careers);
+        setPdfCareerResults(response.pdf_based_careers);
+        console.log('\nAnalysis Complete');
+        console.log('Career Results:', response.ai_generated_careers);
+        break; // Success, exit loop
+        
+      } catch (err) {
+        console.error(`Analysis attempt ${retryCount + 1} failed:`, err);
+        
+        if (retryCount === maxRetries) {
+          setError('Failed to analyze answers. Please try again.');
+          console.error('All analysis attempts failed');
+        } else {
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          retryCount++;
+          continue;
+        }
+      }
     }
+    
+    setIsAnalyzing(false);
+    console.log('=== End of Analysis ===\n');
   };
 
   const handleSkipQuestion = async () => {
@@ -223,9 +229,7 @@ function App() {
     setError(null);
 
     try {
-      const response = await api.post('/web-search', {
-        careers: careerResults,
-      });
+      const response = await api.webSearch([careerResults]);
 
       if (response.data.error) {
         throw new Error(response.data.error);
@@ -246,9 +250,7 @@ function App() {
 
     try {
       // Send the analysis summary to backend for web search
-      const response = await api.post('/search-web-careers', {
-        analysis: careerResults.analysis // This is the brief explanation/analysis
-      });
+      const response = await api.searchWebCareers(careerResults.analysis);
 
       if (response.data.error) {
         throw new Error(response.data.error);

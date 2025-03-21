@@ -13,7 +13,7 @@ from PyPDF2 import PdfReader  # You'll need to install this package first
 dotenv.load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Configure Google API key
 api_key = os.getenv("GEMINI_API_KEY")
@@ -454,7 +454,9 @@ def clean_text(text, max_length):
         text = text[:max_length] + "..."
     return text
 
-
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    try:
+        print("Starting Flask server on port 5002...")
+        app.run(debug=True, port=5002, host='0.0.0.0')
+    except Exception as e:
+        print(f"Error starting Flask server: {str(e)}")
