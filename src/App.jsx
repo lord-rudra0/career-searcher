@@ -43,6 +43,7 @@ function App() {
   const [isSearching, setIsSearching] = useState(false);
   const [webCareerResults, setWebCareerResults] = useState(null);
   const [isWebSearching, setIsWebSearching] = useState(false);
+  const [pdfCareerResults, setPdfCareerResults] = useState(null);
 
   useEffect(() => {
     // Initialize with predefined questions
@@ -182,9 +183,10 @@ function App() {
       const response = await api.post('/analyze-answers', {
         answers: finalAnswers
       });
-      setCareerResults(response.data.careers);
+      setCareerResults(response.data.ai_generated_careers);
+      setPdfCareerResults(response.data.pdf_based_careers);
       console.log('\nAnalysis Complete');
-      console.log('Career Results:', response.data.careers);
+      console.log('Career Results:', response.data.ai_generated_careers);
     } catch (err) {
       console.error('Error analyzing answers:', err);
       setError('Failed to analyze answers');
@@ -453,31 +455,52 @@ function App() {
                   </button>
                 </div>
 
-                {careerResults.map((career, index) => (
-                  <div
-                    key={index}
-                    className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 transform transition-all duration-300 hover:shadow-xl hover:scale-102"
-                    style={{ animationDelay: `${index * 150}ms` }}
-                  >
-                    <h3 className="text-xl font-bold text-gray-800 flex items-center">
-                      <Star className="w-5 h-5 text-yellow-400 mr-2" />
-                      {career.title}
-                    </h3>
-                    <div className="mt-3 mb-3">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm text-gray-600">Match Score</span>
-                        <span className="text-sm font-bold text-blue-600">{career.match}%</span>
+                <div className="mt-8">
+                  <h2 className="text-2xl font-bold mb-4">AI-Generated Career Recommendations</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {careerResults.map((career, index) => (
+                      <div
+                        key={index}
+                        className="bg-white p-6 rounded-lg shadow-md"
+                      >
+                        <h3 className="text-xl font-semibold">{career.title}</h3>
+                        <div className="mt-2">
+                          <div className="flex items-center">
+                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                              <div
+                                className="bg-blue-600 h-2.5 rounded-full"
+                                style={{ width: `${career.match}%` }}
+                              ></div>
+                            </div>
+                            <span className="ml-2 text-sm font-medium">{career.match}%</span>
+                          </div>
+                        </div>
+                        <p className="mt-4 text-gray-600">{career.description}</p>
                       </div>
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 animate-width"
-                          style={{ width: `${career.match}%` }}
-                        />
-                      </div>
-                    </div>
-                    <p className="text-gray-600">{career.description}</p>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                <h2 className="text-2xl font-bold mb-4 mt-8">PDF-Based Career Matches</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {pdfCareerResults && pdfCareerResults.map((career, index) => (
+                    <div key={index} className="bg-white p-6 rounded-lg shadow-md">
+                      <h3 className="text-xl font-semibold">{career.title}</h3>
+                      <div className="mt-2">
+                        <div className="flex items-center">
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className="bg-blue-600 h-2.5 rounded-full"
+                              style={{ width: `${career.match}%` }}
+                            ></div>
+                          </div>
+                          <span className="ml-2 text-sm font-medium">{career.match}%</span>
+                        </div>
+                      </div>
+                      <p className="mt-4 text-gray-600">{career.description}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Web Search Results Section */}
@@ -775,31 +798,52 @@ function App() {
                 </button>
               </div>
 
-              {careerResults.map((career, index) => (
-                <div
-                  key={index}
-                  className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 mb-6 transform transition-all duration-300 hover:shadow-xl hover:scale-102"
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
-                  <h3 className="text-xl font-bold text-gray-800 flex items-center">
-                    <Star className="w-5 h-5 text-yellow-400 mr-2" />
-                    {career.title}
-                  </h3>
-                  <div className="mt-3 mb-3">
-                    <div className="flex justify-between mb-1">
-                      <span className="text-sm text-gray-600">Match Score</span>
-                      <span className="text-sm font-bold text-blue-600">{career.match}%</span>
+              <div className="mt-8">
+                <h2 className="text-2xl font-bold mb-4">AI-Generated Career Recommendations</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {careerResults.map((career, index) => (
+                    <div
+                      key={index}
+                      className="bg-white p-6 rounded-lg shadow-md"
+                    >
+                      <h3 className="text-xl font-semibold">{career.title}</h3>
+                      <div className="mt-2">
+                        <div className="flex items-center">
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className="bg-blue-600 h-2.5 rounded-full"
+                              style={{ width: `${career.match}%` }}
+                            ></div>
+                          </div>
+                          <span className="ml-2 text-sm font-medium">{career.match}%</span>
+                        </div>
+                      </div>
+                      <p className="mt-4 text-gray-600">{career.description}</p>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-1000 animate-width"
-                        style={{ width: `${career.match}%` }}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-gray-600">{career.description}</p>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <h2 className="text-2xl font-bold mb-4 mt-8">PDF-Based Career Matches</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pdfCareerResults && pdfCareerResults.map((career, index) => (
+                  <div key={index} className="bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="text-xl font-semibold">{career.title}</h3>
+                    <div className="mt-2">
+                      <div className="flex items-center">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className="bg-blue-600 h-2.5 rounded-full"
+                            style={{ width: `${career.match}%` }}
+                          ></div>
+                        </div>
+                        <span className="ml-2 text-sm font-medium">{career.match}%</span>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-gray-600">{career.description}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Web Search Results Section */}

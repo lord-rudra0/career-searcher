@@ -8,6 +8,7 @@ import re
 from googlesearch import search
 import requests
 from bs4 import BeautifulSoup
+from PyPDF2 import PdfReader  # You'll need to install this package first
 
 dotenv.load_dotenv()
 
@@ -164,7 +165,6 @@ def analyze_answers():
         # Step 2: Generate career recommendations with the second AI
         career_prompt = f"""Based on this analysis:
         {detailed_analysis}
-        
          ]
         Each match_percentage should be defined by the person's answer to the question amd from the analysis not the random number
         
@@ -189,11 +189,60 @@ def analyze_answers():
             cleaned_text = cleaned_text[:-3]
         
         careers = json.loads(cleaned_text)
-        return jsonify({"careers": careers})
+
+        # Step 3: Get PDF-based career recommendations (new code)
+        pdf_careers = get_pdf_career_recommendations(detailed_analysis)
+        
+        return jsonify({
+            "ai_generated_careers": careers,
+            "pdf_based_careers": pdf_careers
+        })
 
     except Exception as e:
         print(f"Error in analysis: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+def get_pdf_career_recommendations(detailed_analysis):
+    """Extract careers from PDF and match based on analysis"""
+    try:
+        # Read the PDF
+        reader = PdfReader("Career-List.pdf")
+        pdf_text = ""
+        for page in reader.pages:
+            pdf_text += page.extract_text()
+
+        # Use AI to analyze and match careers from PDF
+        pdf_analysis_prompt = f"""
+        Given this detailed analysis of a person:
+        {detailed_analysis}
+        
+        And this list of careers:
+        {pdf_text}
+        
+        Recommend 5 best-matching careers from the PDF list. Format as JSON array:
+        [
+            {{
+                "title": "Career Title from PDF",
+                "match": match_percentage (between 75-100),
+                "description": "Why this career from the PDF matches the person's profile"
+            }}
+        ]
+        """
+
+        pdf_career_response = career_ai.generate_content(pdf_analysis_prompt)
+        cleaned_pdf_response = pdf_career_response.text.strip()
+        
+        # Clean the response
+        if cleaned_pdf_response.startswith("```json"):
+            cleaned_pdf_response = cleaned_pdf_response[7:]
+        if cleaned_pdf_response.endswith("```"):
+            cleaned_pdf_response = cleaned_pdf_response[:-3]
+        
+        return json.loads(cleaned_pdf_response)
+
+    except Exception as e:
+        print(f"Error in PDF career analysis: {str(e)}")
+        return []
 
 @app.route('/test-api', methods=['GET'])
 def test_api():
@@ -404,6 +453,8 @@ def clean_text(text, max_length):
     if len(text) > max_length:
         text = text[:max_length] + "..."
     return text
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
