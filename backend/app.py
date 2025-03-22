@@ -466,6 +466,37 @@ def clean_text(text, max_length):
         text = text[:max_length] + "..."
     return text
 
+@app.route('/chat', methods=['POST'])
+def chat():
+    try:
+        data = request.json
+        message = data.get('message')
+        chat_history = data.get('chatHistory', [])
+
+        # Format chat history for context
+        context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history])
+        
+        # Create prompt for Gemini
+        prompt = f"""You are a helpful career guidance assistant. Continue this conversation:
+        {context}
+        user: {message}
+        assistant:"""
+        
+        # Generate response
+        response = question_ai.generate_content(prompt)
+        
+        return jsonify({
+            "status": "success",
+            "response": response.text
+        })
+        
+    except Exception as e:
+        print(f"Chat error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 if __name__ == '__main__':
     try:
         print("Starting Flask server on port 5002...")

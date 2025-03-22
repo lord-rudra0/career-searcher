@@ -20,6 +20,7 @@ import questionsData from './questions.json';
 import api from './services/api';
 import CareerRoadmap from './components/CareerRoadmap';
 import LoadingSpinner from './components/LoadingSpinner';
+import ChatBot from './components/ChatBot';
 
 function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -480,6 +481,14 @@ function App() {
           )}
         </main>
 
+        {/* Add ChatBot component */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-4">Career Guidance Chatbot</h2>
+            <ChatBot />
+          </div>
+        </div>
+
         {/* Footer */}
         <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white py-6 px-4">
           <div className="max-w-6xl mx-auto text-center">
@@ -835,6 +844,14 @@ function App() {
           </>
         )}
       </main>
+
+      {/* Add ChatBot component */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-4">Career Guidance Chatbot</h2>
+          <ChatBot />
+        </div>
+      </div>
 
       {/* Footer */}
       <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white py-6 px-4">
