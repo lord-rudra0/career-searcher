@@ -19,6 +19,7 @@ import {
 import questionsData from './questions.json';
 import api from './services/api';
 import CareerRoadmap from './components/CareerRoadmap';
+import LoadingSpinner from './components/LoadingSpinner';
 
 function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -266,14 +267,6 @@ function App() {
     }
   };
 
-  const LoadingAnimation = () => (
-    <div className="flex items-center justify-center space-x-2">
-      <div className="w-4 h-4 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-      <div className="w-4 h-4 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-      <div className="w-4 h-4 bg-blue-500 rounded-full animate-bounce"></div>
-    </div>
-  );
-
   const LogoAnimation = () => (
     <div className="relative w-12 h-12">
       <div className="absolute inset-0 animate-spin-slow">
@@ -281,27 +274,6 @@ function App() {
         <Star className="w-6 h-6 text-blue-400 absolute bottom-0 left-1/2 transform -translate-x-1/2" />
       </div>
       <Rocket className="w-8 h-8 text-indigo-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-    </div>
-  );
-
-  // Loading animation components
-  const LoadingSpinner = () => (
-    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white rounded-lg p-8 shadow-xl">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-          <p className="mt-4 text-gray-700">
-            {isGeneratingQuestion
-              ? "AI is generating your next question..."
-              : "Taking longer than expected..."}
-          </p>
-          <div className="mt-3 flex space-x-1">
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 
@@ -484,7 +456,6 @@ function App() {
                 <Zap className="w-8 h-8 text-yellow-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
               </div>
               <p className="mt-4 text-xl text-gray-700">Analyzing your responses...</p>
-              <LoadingAnimation />
             </div>
           )}
 
@@ -637,7 +608,6 @@ function App() {
               <Zap className="w-8 h-8 text-yellow-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
             </div>
             <p className="mt-4 text-xl text-gray-700">Analyzing your responses...</p>
-            <LoadingAnimation />
           </div>
         )}
 
