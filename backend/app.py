@@ -466,9 +466,6 @@ def clean_text(text, max_length):
         text = text[:max_length] + "..."
     return text
 
+# Ensure Flask app is running on all interfaces
 if __name__ == '__main__':
-    try:
-        print("Starting Flask server on port 5002...")
-        app.run(debug=True, port=5002, host='0.0.0.0')
-    except Exception as e:
-        print(f"Error starting Flask server: {str(e)}")
+    app.run(host='0.0.0.0', port=5002)

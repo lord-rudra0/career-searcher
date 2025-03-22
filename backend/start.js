@@ -6,7 +6,7 @@ let pythonProcess = null;
 
 const startFlask = () => {
     console.log('Starting Flask server...');
-    pythonProcess = spawn('python', ['app.py'], {
+    pythonProcess = spawn('venv/Scripts/python', ['app.py'], {
         cwd: path.join(__dirname),
         stdio: 'inherit'
     });

@@ -5,8 +5,8 @@ const API_BASE_URL = 'http://localhost:5001';  // Changed from 5000 to 5001
 
 // Add timeout and retry logic
 const axiosInstance = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 30000,  // Increased from 10000 to 30000
+    baseURL: 'http://localhost:5001', // Ensure this matches your backend URL
+    timeout: 10000,
     headers: {
         'Content-Type': 'application/json'
     }

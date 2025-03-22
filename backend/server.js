@@ -9,7 +9,7 @@ const PYTHON_API_URL = 'http://localhost:5002';
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: 'http://localhost:5173',
     credentials: true
 }));
 app.use(bodyParser.json());
@@ -135,7 +135,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`Express server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
     console.log(`Connecting to Flask API at ${PYTHON_API_URL}`);
 }); 
