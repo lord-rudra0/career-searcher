@@ -19,6 +19,8 @@ import {
 import questionsData from './questions.json';
 import api from './services/api';
 import CareerRoadmap from './components/CareerRoadmap';
+import { BrowserRouter as Router } from 'react-router-dom';
+import Navbar from './components/Navbar/Navbar';
 
 function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -36,6 +38,7 @@ function App() {
   const [webCareerResults, setWebCareerResults] = useState(null);
   const [isWebSearching, setIsWebSearching] = useState(false);
   const [pdfCareerResults, setPdfCareerResults] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // Initialize with predefined questions
@@ -375,7 +378,375 @@ function App() {
 
   if (careerResults) {
     return (
+      <Router>
+        <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
+          <Navbar 
+            isAuthenticated={isAuthenticated} 
+            setIsAuthenticated={setIsAuthenticated}
+          />
+          {/* Header */}
+          <header className="bg-white/80 backdrop-blur-sm shadow-lg py-4 px-6 fixed w-full top-0 z-50">
+            <div className="max-w-6xl mx-auto flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <LogoAnimation />
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 bg-clip-text text-transparent animate-gradient">
+                    Career Compass
+                  </h1>
+                  <p className="text-sm text-gray-500">Discover Your Perfect Path</p>
+                </div>
+              </div>
+              {!careerResults && (
+                <div className="flex flex-col items-end">
+                  <div className="text-sm text-gray-600 mb-1">
+                    {getProgressText()}
+                  </div>
+                  <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"
+                      style={{ width: `${(currentQuestionIndex + 1) * 5}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </header>
+
+          {/* Main Content */}
+          <main className="flex-grow container mx-auto px-4 pt-28 pb-20">
+            {showLoader && <LoadingSpinner />}
+
+            {error && (
+              <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-shake">
+                {error}
+              </div>
+            )}
+
+            {!careerResults && currentQuestionIndex < allQuestions.length && (
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl animate-float">
+                  <div className="flex items-center space-x-2 mb-6">
+                    <Target className="w-6 h-6 text-indigo-500 animate-pulse" />
+                    <h2 className="text-2xl font-bold text-gray-800">
+                      {allQuestions[currentQuestionIndex]?.question}
+                    </h2>
+                  </div>
+                  <div className="space-y-3">
+                    {allQuestions[currentQuestionIndex]?.options.map((option, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSelectAnswer(option)}
+                        disabled={isLoading}
+                        className={`w-full p-4 text-left rounded-xl transition-all duration-300 transform hover:scale-102 hover:shadow-md flex items-center space-x-3 ${currentAnswer === option
+                          ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
+                          : 'bg-white hover:bg-gray-50 text-gray-700'
+                          } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${currentAnswer === option ? 'bg-white/20' : 'bg-gray-100'
+                          }`}>
+                          {index + 1}
+                        </div>
+                        <span>{option}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex justify-between mt-8 space-x-4">
+                    <button
+                      onClick={handleSkipQuestion}
+                      disabled={isLoading}
+                      className={`flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 group ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                    >
+                      <SkipForward className="w-4 h-4 mr-2 group-hover:animate-bounce" />
+                      Skip
+                    </button>
+                    <button
+                      onClick={handleNextQuestion}
+                      disabled={!currentAnswer || isLoading}
+                      className={`flex items-center px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 group ${!currentAnswer || isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          {isGeneratingQuestion ? 'Generating...' : 'Loading...'}
+                        </>
+                      ) : currentQuestionIndex < 19 ? (
+                        <>
+                          Next
+                          <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                        </>
+                      ) : (
+                        'Complete'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isAnalyzing && (
+              <div className="text-center py-20 animate-fade-in">
+                <div className="relative w-20 h-20 mx-auto mb-4">
+                  <Compass className="w-20 h-20 text-blue-500 animate-spin-slow" />
+                  <Zap className="w-8 h-8 text-yellow-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                </div>
+                <p className="mt-4 text-xl text-gray-700">Analyzing your responses...</p>
+                <LoadingAnimation />
+              </div>
+            )}
+
+            {careerResults && (
+              <>
+                <CareerSection 
+                  title="AI-Generated Career Recommendations" 
+                  careers={careerResults} 
+                  icon={Sparkles}
+                />
+                
+                {pdfCareerResults && (
+                  <CareerSection 
+                    title="PDF-Based Career Matches" 
+                    careers={pdfCareerResults} 
+                    icon={BookOpen}
+                  />
+                )}
+
+                <div className="max-w-3xl mx-auto animate-slide-up">
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center space-x-3">
+                      <Award className="w-8 h-8 text-yellow-400 animate-bounce" />
+                      <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                        Your Career Matches
+                      </h2>
+                    </div>
+                    <button
+                      onClick={handleWebSearch}
+                      disabled={isSearching}
+                      className="flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-gray-700 hover:text-blue-600"
+                    >
+                      {isSearching ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Searching...
+                        </>
+                      ) : (
+                        <>
+                          <Globe className="w-4 h-4 mr-2" />
+                          Find More Careers
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="mt-8">
+                    <h2 className="text-2xl font-bold mb-4">AI-Generated Career Recommendations</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {careerResults.map((career, index) => (
+                        <div
+                          key={index}
+                          className="bg-white p-6 rounded-lg shadow-md"
+                        >
+                          <h3 className="text-xl font-semibold">{career.title}</h3>
+                          <div className="mt-2">
+                            <div className="flex items-center">
+                              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                <div
+                                  className="bg-blue-600 h-2.5 rounded-full"
+                                  style={{ width: `${career.match}%` }}
+                                ></div>
+                              </div>
+                              <span className="ml-2 text-sm font-medium">{career.match}%</span>
+                            </div>
+                          </div>
+                          <p className="mt-4 text-gray-600">{career.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <h2 className="text-2xl font-bold mb-4 mt-8">PDF-Based Career Matches</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {pdfCareerResults && pdfCareerResults.map((career, index) => (
+                      <div key={index} className="bg-white p-6 rounded-lg shadow-md">
+                        <h3 className="text-xl font-semibold">{career.title}</h3>
+                        <div className="mt-2">
+                          <div className="flex items-center">
+                            <div className="w-full bg-gray-200 rounded-full h-2.5">
+                              <div
+                                className="bg-blue-600 h-2.5 rounded-full"
+                                style={{ width: `${career.match}%` }}
+                              ></div>
+                            </div>
+                            <span className="ml-2 text-sm font-medium">{career.match}%</span>
+                          </div>
+                        </div>
+                        <p className="mt-4 text-gray-600">{career.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Web Search Results Section */}
+                {webSearchResults && (
+                  <div className="max-w-3xl mx-auto mt-12 animate-slide-up">
+                    <div className="flex items-center space-x-3 mb-8">
+                      <Search className="w-7 h-7 text-blue-500" />
+                      <h2 className="text-2xl font-bold text-gray-800">
+                        Additional Career Suggestions
+                      </h2>
+                    </div>
+
+                    <div className="space-y-6">
+                      {webSearchResults.map((result, index) => (
+                        <div
+                          key={index}
+                          className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300"
+                          style={{ animationDelay: `${index * 150}ms` }}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                              {result.title}
+                            </h3>
+                            <span className="text-sm text-blue-600 font-medium">
+                              {result.relevance}% Match
+                            </span>
+                          </div>
+                          <p className="text-gray-600 mb-3">{result.description}</p>
+                          {result.link && (
+                            <a
+                              href={result.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center text-sm text-blue-500 hover:text-blue-700"
+                            >
+                              Learn More
+                              <ExternalLink className="w-3 h-3 ml-1" />
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Web Search Button - Centered and Prominent */}
+                <div className="max-w-3xl mx-auto mt-8 text-center">
+                  <button
+                    onClick={handleWebCareerSearch}
+                    disabled={isWebSearching}
+                    className="group relative inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 disabled:opacity-50"
+                  >
+                    {isWebSearching ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Searching Web...
+                      </>
+                    ) : (
+                      <>
+                        <Globe className="w-5 h-5 mr-2 group-hover:animate-pulse" />
+                        Discover More Careers Online
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Web Search Results Section */}
+                {webCareerResults && (
+                  <div className="max-w-3xl mx-auto mt-12 mb-8">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 animate-fade-in">
+                      <div className="flex items-center space-x-3 mb-6">
+                        <BookOpen className="w-6 h-6 text-blue-500" />
+                        <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                          Web Career Suggestions
+                        </h2>
+                      </div>
+
+                      <div className="space-y-6">
+                        {webCareerResults.map((career, index) => (
+                          <div
+                            key={index}
+                            className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300 animate-slide-up"
+                            style={{ animationDelay: `${index * 150}ms` }}
+                          >
+                            <div className="flex items-start justify-between">
+                              <h3 className="text-lg font-semibold text-gray-800">
+                                {career.title}
+                              </h3>
+                              <span className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm font-medium">
+                                {career.matchScore}% Match
+                              </span>
+                            </div>
+
+                            <p className="mt-3 text-gray-600">
+                              {career.description}
+                            </p>
+
+                            {career.keySkills && (
+                              <div className="mt-3">
+                                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                                  Key Skills:
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {career.keySkills.map((skill, skillIndex) => (
+                                    <span
+                                      key={skillIndex}
+                                      className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-sm"
+                                    >
+                                      {skill}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {career.sourceLink && (
+                              <a
+                                href={career.sourceLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center mt-4 text-blue-500 hover:text-blue-700 transition-colors"
+                              >
+                                Learn More
+                                <ExternalLink className="w-4 h-4 ml-1" />
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </main>
+
+          {/* Footer */}
+          <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white py-6 px-4">
+            <div className="max-w-6xl mx-auto text-center">
+              <div className="flex items-center justify-center space-x-2 mb-3">
+                <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" />
+                <span className="text-gray-400">Powered by Advanced AI</span>
+              </div>
+              <p className="text-sm text-gray-400">
+                Guiding you towards your ideal career path
+              </p>
+            </div>
+          </footer>
+        </div>
+      </Router>
+    );
+  }
+
+  const currentQuestion = allQuestions[currentQuestionIndex];
+
+  return (
+    <Router>
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
+        <Navbar 
+          isAuthenticated={isAuthenticated} 
+          setIsAuthenticated={setIsAuthenticated}
+        />
         {/* Header */}
         <header className="bg-white/80 backdrop-blur-sm shadow-lg py-4 px-6 fixed w-full top-0 z-50">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
@@ -726,363 +1097,7 @@ function App() {
           </div>
         </footer>
       </div>
-    );
-  }
-
-  const currentQuestion = allQuestions[currentQuestionIndex];
-
-  return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm shadow-lg py-4 px-6 fixed w-full top-0 z-50">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <LogoAnimation />
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 bg-clip-text text-transparent animate-gradient">
-                Career Compass
-              </h1>
-              <p className="text-sm text-gray-500">Discover Your Perfect Path</p>
-            </div>
-          </div>
-          {!careerResults && (
-            <div className="flex flex-col items-end">
-              <div className="text-sm text-gray-600 mb-1">
-                {getProgressText()}
-              </div>
-              <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-300"
-                  style={{ width: `${(currentQuestionIndex + 1) * 5}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-grow container mx-auto px-4 pt-28 pb-20">
-        {showLoader && <LoadingSpinner />}
-
-        {error && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded animate-shake">
-            {error}
-          </div>
-        )}
-
-        {!careerResults && currentQuestionIndex < allQuestions.length && (
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl animate-float">
-              <div className="flex items-center space-x-2 mb-6">
-                <Target className="w-6 h-6 text-indigo-500 animate-pulse" />
-                <h2 className="text-2xl font-bold text-gray-800">
-                  {allQuestions[currentQuestionIndex]?.question}
-                </h2>
-              </div>
-              <div className="space-y-3">
-                {allQuestions[currentQuestionIndex]?.options.map((option, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSelectAnswer(option)}
-                    disabled={isLoading}
-                    className={`w-full p-4 text-left rounded-xl transition-all duration-300 transform hover:scale-102 hover:shadow-md flex items-center space-x-3 ${currentAnswer === option
-                      ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
-                      : 'bg-white hover:bg-gray-50 text-gray-700'
-                      } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${currentAnswer === option ? 'bg-white/20' : 'bg-gray-100'
-                      }`}>
-                      {index + 1}
-                    </div>
-                    <span>{option}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="flex justify-between mt-8 space-x-4">
-                <button
-                  onClick={handleSkipQuestion}
-                  disabled={isLoading}
-                  className={`flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200 group ${isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                >
-                  <SkipForward className="w-4 h-4 mr-2 group-hover:animate-bounce" />
-                  Skip
-                </button>
-                <button
-                  onClick={handleNextQuestion}
-                  disabled={!currentAnswer || isLoading}
-                  className={`flex items-center px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 group ${!currentAnswer || isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {isGeneratingQuestion ? 'Generating...' : 'Loading...'}
-                    </>
-                  ) : currentQuestionIndex < 19 ? (
-                    <>
-                      Next
-                      <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                    </>
-                  ) : (
-                    'Complete'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isAnalyzing && (
-          <div className="text-center py-20 animate-fade-in">
-            <div className="relative w-20 h-20 mx-auto mb-4">
-              <Compass className="w-20 h-20 text-blue-500 animate-spin-slow" />
-              <Zap className="w-8 h-8 text-yellow-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
-            </div>
-            <p className="mt-4 text-xl text-gray-700">Analyzing your responses...</p>
-            <LoadingAnimation />
-          </div>
-        )}
-
-        {careerResults && (
-          <>
-            <CareerSection 
-              title="AI-Generated Career Recommendations" 
-              careers={careerResults} 
-              icon={Sparkles}
-            />
-            
-            {pdfCareerResults && (
-              <CareerSection 
-                title="PDF-Based Career Matches" 
-                careers={pdfCareerResults} 
-                icon={BookOpen}
-              />
-            )}
-
-            <div className="max-w-3xl mx-auto animate-slide-up">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center space-x-3">
-                  <Award className="w-8 h-8 text-yellow-400 animate-bounce" />
-                  <h2 className="text-3xl font-bold text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                    Your Career Matches
-                  </h2>
-                </div>
-                <button
-                  onClick={handleWebSearch}
-                  disabled={isSearching}
-                  className="flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-gray-700 hover:text-blue-600"
-                >
-                  {isSearching ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Globe className="w-4 h-4 mr-2" />
-                      Find More Careers
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <div className="mt-8">
-                <h2 className="text-2xl font-bold mb-4">AI-Generated Career Recommendations</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {careerResults.map((career, index) => (
-                    <div
-                      key={index}
-                      className="bg-white p-6 rounded-lg shadow-md"
-                    >
-                      <h3 className="text-xl font-semibold">{career.title}</h3>
-                      <div className="mt-2">
-                        <div className="flex items-center">
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full"
-                              style={{ width: `${career.match}%` }}
-                            ></div>
-                          </div>
-                          <span className="ml-2 text-sm font-medium">{career.match}%</span>
-                        </div>
-                      </div>
-                      <p className="mt-4 text-gray-600">{career.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <h2 className="text-2xl font-bold mb-4 mt-8">PDF-Based Career Matches</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pdfCareerResults && pdfCareerResults.map((career, index) => (
-                  <div key={index} className="bg-white p-6 rounded-lg shadow-md">
-                    <h3 className="text-xl font-semibold">{career.title}</h3>
-                    <div className="mt-2">
-                      <div className="flex items-center">
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
-                          <div
-                            className="bg-blue-600 h-2.5 rounded-full"
-                            style={{ width: `${career.match}%` }}
-                          ></div>
-                        </div>
-                        <span className="ml-2 text-sm font-medium">{career.match}%</span>
-                      </div>
-                    </div>
-                    <p className="mt-4 text-gray-600">{career.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Web Search Results Section */}
-            {webSearchResults && (
-              <div className="max-w-3xl mx-auto mt-12 animate-slide-up">
-                <div className="flex items-center space-x-3 mb-8">
-                  <Search className="w-7 h-7 text-blue-500" />
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    Additional Career Suggestions
-                  </h2>
-                </div>
-
-                <div className="space-y-6">
-                  {webSearchResults.map((result, index) => (
-                    <div
-                      key={index}
-                      className="bg-white/80 backdrop-blur-sm rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300"
-                      style={{ animationDelay: `${index * 150}ms` }}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          {result.title}
-                        </h3>
-                        <span className="text-sm text-blue-600 font-medium">
-                          {result.relevance}% Match
-                        </span>
-                      </div>
-                      <p className="text-gray-600 mb-3">{result.description}</p>
-                      {result.link && (
-                        <a
-                          href={result.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center text-sm text-blue-500 hover:text-blue-700"
-                        >
-                          Learn More
-                          <ExternalLink className="w-3 h-3 ml-1" />
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Web Search Button - Centered and Prominent */}
-            <div className="max-w-3xl mx-auto mt-8 text-center">
-              <button
-                onClick={handleWebCareerSearch}
-                disabled={isWebSearching}
-                className="group relative inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-102 disabled:opacity-50"
-              >
-                {isWebSearching ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Searching Web...
-                  </>
-                ) : (
-                  <>
-                    <Globe className="w-5 h-5 mr-2 group-hover:animate-pulse" />
-                    Discover More Careers Online
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Web Search Results Section */}
-            {webCareerResults && (
-              <div className="max-w-3xl mx-auto mt-12 mb-8">
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-6 animate-fade-in">
-                  <div className="flex items-center space-x-3 mb-6">
-                    <BookOpen className="w-6 h-6 text-blue-500" />
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                      Web Career Suggestions
-                    </h2>
-                  </div>
-
-                  <div className="space-y-6">
-                    {webCareerResults.map((career, index) => (
-                      <div
-                        key={index}
-                        className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-all duration-300 animate-slide-up"
-                        style={{ animationDelay: `${index * 150}ms` }}
-                      >
-                        <div className="flex items-start justify-between">
-                          <h3 className="text-lg font-semibold text-gray-800">
-                            {career.title}
-                          </h3>
-                          <span className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm font-medium">
-                            {career.matchScore}% Match
-                          </span>
-                        </div>
-
-                        <p className="mt-3 text-gray-600">
-                          {career.description}
-                        </p>
-
-                        {career.keySkills && (
-                          <div className="mt-3">
-                            <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                              Key Skills:
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                              {career.keySkills.map((skill, skillIndex) => (
-                                <span
-                                  key={skillIndex}
-                                  className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-sm"
-                                >
-                                  {skill}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {career.sourceLink && (
-                          <a
-                            href={career.sourceLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center mt-4 text-blue-500 hover:text-blue-700 transition-colors"
-                          >
-                            Learn More
-                            <ExternalLink className="w-4 h-4 ml-1" />
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white py-6 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="flex items-center justify-center space-x-2 mb-3">
-            <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" />
-            <span className="text-gray-400">Powered by Advanced AI</span>
-          </div>
-          <p className="text-sm text-gray-400">
-            Guiding you towards your ideal career path
-          </p>
-        </div>
-      </footer>
-    </div>
+    </Router>
   );
 }
 
