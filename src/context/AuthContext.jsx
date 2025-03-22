@@ -1,55 +1,50 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import auth from '../services/auth';
+import React, { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Check if user is logged in on mount
-        const checkAuth = async () => {
-            try {
-                const storedUser = localStorage.getItem('user');
-                if (storedUser) {
-                    setUser(JSON.parse(storedUser));
-                }
-            } catch (error) {
-                console.error('Auth check failed:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        checkAuth();
-    }, []);
-
-    const login = async (username, password) => {
-        const response = await auth.login(username, password);
-        setUser(response.user);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        return response;
+    const login = async (email, password) => {
+        try {
+            // Add your login logic here
+            // For now, we'll just set authenticated to true
+            setIsAuthenticated(true);
+            setUser({ email });
+            return true;
+        } catch (error) {
+            console.error('Login error:', error);
+            return false;
+        }
     };
 
-    const logout = async () => {
-        await auth.logout();
+    const logout = () => {
+        setIsAuthenticated(false);
         setUser(null);
-        localStorage.removeItem('user');
+        localStorage.removeItem('token');
     };
 
-    const register = async (username, email, password) => {
-        const response = await auth.register(username, email, password);
-        setUser(response.user);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        return response;
+    const value = {
+        isAuthenticated,
+        user,
+        login,
+        logout,
+        setIsAuthenticated,
+        setUser
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
 };
 
-export const useAuth = () => useContext(AuthContext); 
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+}; 

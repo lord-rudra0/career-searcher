@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
-const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
+const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
 
   const navItems = [
+    { name: 'Home', href: '/' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    setIsAuthenticated(false);
+    logout();
     navigate('/sign-in');
+  };
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
   };
 
   return (
@@ -22,7 +28,7 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
       <div className="container">
         {/* Logo Section */}
         <div className="logo">
-          <Link to="/" className="logo-text">
+          <Link to="/" className="logo-text" onClick={closeMenu}>
             <span className="logo-gradient">Careerflow.ai</span>
           </Link>
         </div>
@@ -30,19 +36,46 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
         {/* Desktop Navigation */}
         <div className="nav-links">
           {navItems.map((item) => (
-            <Link key={item.name} to={item.href} className="nav-link">
+            <Link 
+              key={item.name} 
+              to={item.href} 
+              className="nav-link"
+              onClick={closeMenu}
+            >
               {item.name}
             </Link>
           ))}
-          {!isAuthenticated && (
-            <Link to="/sign-up" className="signup-button">Sign Up</Link>
-          )}
-          {isAuthenticated && (
-            <button onClick={handleLogout} className="logout-button">Logout</button>
+          {!isAuthenticated ? (
+            <>
+              <Link 
+                to="/sign-in" 
+                className="nav-link"
+                onClick={closeMenu}
+              >
+                Sign In
+              </Link>
+              <Link 
+                to="/sign-up" 
+                className="signup-button"
+                onClick={closeMenu}
+              >
+                Sign Up
+              </Link>
+            </>
+          ) : (
+            <button 
+              onClick={() => {
+                handleLogout();
+                closeMenu();
+              }} 
+              className="logout-button"
+            >
+              Logout
+            </button>
           )}
         </div>
 
-        {/* Mobile Navigation Toggle */}
+        {/* Mobile Menu Button */}
         <div className="menu-icon">
           <button
             className="menu-button"
@@ -74,18 +107,38 @@ const Navbar = ({ isAuthenticated, setIsAuthenticated }) => {
                   key={item.name}
                   to={item.href}
                   className="sheet-link"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={closeMenu}
                 >
                   {item.name}
                 </Link>
               ))}
-              {!isAuthenticated && (
-                <Link to="/sign-up" className="signup-button" onClick={() => setIsMenuOpen(false)}>
-                  Sign Up
-                </Link>
-              )}
-              {isAuthenticated && (
-                <button onClick={handleLogout} className="logout-button">Logout</button>
+              {!isAuthenticated ? (
+                <>
+                  <Link 
+                    to="/sign-in" 
+                    className="sheet-link"
+                    onClick={closeMenu}
+                  >
+                    Sign In
+                  </Link>
+                  <Link 
+                    to="/sign-up" 
+                    className="signup-button"
+                    onClick={closeMenu}
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              ) : (
+                <button 
+                  onClick={() => {
+                    handleLogout();
+                    closeMenu();
+                  }} 
+                  className="logout-button"
+                >
+                  Logout
+                </button>
               )}
             </nav>
           </div>

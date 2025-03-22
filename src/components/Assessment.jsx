@@ -18,6 +18,7 @@ import {
 import questionsData from '../questions.json';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function Assessment() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -33,7 +34,15 @@ function Assessment() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isWebSearching, setIsWebSearching] = useState(false);
   const [webSearchResults, setWebSearchResults] = useState(null);
-  const { logout } = useAuth();
+  const { logout: authLogout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  // Add authentication check
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/sign-in');
+    }
+  }, [isAuthenticated, navigate]);
 
   const generateNextAIQuestion = async (previousAnswers) => {
     try {
@@ -81,7 +90,7 @@ function Assessment() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await authLogout();
     } catch (error) {
       console.error('Logout failed:', error);
     }
