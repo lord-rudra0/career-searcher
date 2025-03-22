@@ -483,10 +483,7 @@ function App() {
 
         {/* Add ChatBot component */}
         <div className="container mx-auto px-4 py-8">
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-4">Career Guidance Chatbot</h2>
-            <ChatBot />
-          </div>
+        
         </div>
 
         {/* Footer */}
@@ -847,8 +844,8 @@ function App() {
 
       {/* Add ChatBot component */}
       <div className="container mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-2xl font-bold mb-4">Career Guidance Chatbot</h2>
+        <div className>
+         
           <ChatBot />
         </div>
       </div>
