@@ -3,7 +3,7 @@ import { toast } from "sonner";
 
 const AuthContext = createContext(null);
 
-const API_URL = "http://localhost:5000";
+const API_URL = "http://localhost:5001";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

@@ -1,4 +1,3 @@
-const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const bodyParser = require('body-parser');
@@ -9,7 +8,7 @@ const session = require('express-session');
 const LocalStrategy = require("passport-local").Strategy;
 const User = require("./models/User.js");
 const dotenv = require('dotenv');
-const cors = require('cors');
+// const cors = require('cors');
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const { verifyToken } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
