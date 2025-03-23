@@ -2,6 +2,17 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const bodyParser = require('body-parser');
+const express = require('express');
+const mongoose = require('mongoose');
+const passport = require('passport');
+const session = require('express-session');
+const LocalStrategy = require("passport-local").Strategy;
+const User = require("./models/User.js");
+const dotenv = require('dotenv');
+const cors = require('cors');
+const jwt = require('jsonwebtoken'); // Import jsonwebtoken
+const { verifyToken } = require('./middleware/auth');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
