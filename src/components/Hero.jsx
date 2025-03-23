@@ -1,84 +1,108 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { LogoAnimation } from './LogoAnimation'; // If you have this component
 
-function Hero() {
-    return (
-        <div className="relative min-h-screen">
-            {/* Header */}
-            <header className="bg-white/80 backdrop-blur-sm shadow-lg py-4 px-6">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <LogoAnimation />
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            Career Compass
-                        </h1>
-                    </div>
-                    <div className="flex space-x-4">
-                        <Link
-                            to="/login"
-                            className="px-4 py-2 text-indigo-600 hover:text-indigo-700"
-                        >
-                            Log In
-                        </Link>
-                        <Link
-                            to="/register"
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                        >
-                            Sign Up
-                        </Link>
-                    </div>
-                </div>
-            </header>
+const Hero = () => {
+  const blobRefs = useRef([]);
 
-            {/* Hero Content */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                <div className="text-center">
-                    <h2 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                        <span className="block">Discover Your</span>
-                        <span className="block text-indigo-600">Perfect Career Path</span>
-                    </h2>
-                    <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-                        Take our AI-powered career assessment to find the perfect career match for your skills, interests, and personality.
-                    </p>
-                    <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
-                        <div className="rounded-md shadow">
-                            <Link
-                                to="/register"
-                                className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10"
-                            >
-                                Start Free Assessment
-                            </Link>
-                        </div>
-                        <div className="mt-3 sm:mt-0 sm:ml-3">
-                            <Link
-                                to="/login"
-                                className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
-                            >
-                                Sign In
-                            </Link>
-                        </div>
-                    </div>
-                </div>
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const { clientX, clientY } = e;
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      
+      blobRefs.current.forEach((blob, index) => {
+        if (blob) {
+          const factor = (index + 1) * 0.01;
+          const xPos = (clientX / windowWidth - 0.5) * factor * 60;
+          const yPos = (clientY / windowHeight - 0.5) * factor * 60;
+          blob.style.transform = `translate(${xPos}px, ${yPos}px)`;
+        }
+      });
+    };
 
-                {/* Features Section */}
-                <div className="mt-24 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-900">AI-Powered Analysis</h3>
-                        <p className="mt-2 text-gray-600">Advanced AI algorithms analyze your responses to provide personalized career recommendations.</p>
-                    </div>
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-900">Comprehensive Assessment</h3>
-                        <p className="mt-2 text-gray-600">In-depth questions designed to understand your skills, interests, and career goals.</p>
-                    </div>
-                    <div className="bg-white rounded-lg shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-900">Detailed Insights</h3>
-                        <p className="mt-2 text-gray-600">Get detailed career matches with explanations and potential growth paths.</p>
-                    </div>
-                </div>
-            </main>
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  const addToRefs = (el) => {
+    if (el && !blobRefs.current.includes(el)) {
+      blobRefs.current.push(el);
+    }
+  };
+
+  return (
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 pb-16">
+      {/* Background blobs */}
+      <div ref={addToRefs} className="blob w-[600px] h-[600px] top-[-200px] right-[-100px] bg-primary/10 animate-blob"></div>
+      <div ref={addToRefs} className="blob w-[500px] h-[500px] bottom-[-150px] left-[-100px] bg-accent/10 animate-blob animation-delay-2000"></div>
+      <div ref={addToRefs} className="blob w-[300px] h-[300px] bottom-[100px] right-[300px] bg-foreground/5 animate-blob animation-delay-4000"></div>
+      
+      <div className="container px-6 md:px-8 mx-auto flex flex-col lg:flex-row items-center justify-between gap-12 z-10">
+        <div className="w-full lg:w-1/2 text-center lg:text-left">
+          <span className="inline-block px-3 py-1 mb-6 rounded-full bg-primary/10 text-primary text-sm font-medium animate-fade-in">
+            Discover Your Perfect Career Path
+          </span>
+          
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 animate-fade-in text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+            Unleash Your Potential with Our <span className="text-shadow">AI-Driven</span> Career Assessment
+          </h1>
+          
+          <p className="text-lg text-foreground/80 mb-8 max-w-lg mx-auto lg:mx-0 animate-fade-in">
+            Uncover your true potential with our innovative career assessment tool. In just a few minutes, get personalized career recommendations based on your unique skills and preferences.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start space-y-4 sm:space-y-0 sm:space-x-4 animate-fade-in">
+            <Link to="/test" className="px-8 py-3.5 rounded-full bg-primary text-white font-medium text-lg shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:translate-y-[-2px] active:translate-y-0 transition-all duration-300 button-shine w-full sm:w-auto text-center">
+              Start Assessment
+            </Link>
+            
+            <a href="#how-it-works" className="px-8 py-3.5 rounded-full border border-border bg-background hover:bg-secondary transition-colors duration-300 font-medium text-lg w-full sm:w-auto text-center">
+              Learn More
+            </a>
+          </div>
         </div>
-    );
-}
+        
+        <div className="w-full lg:w-1/2 perspective">
+          <div className="relative mx-auto w-full max-w-md animate-float">
+            <div className="absolute inset-0 border border-white/20 bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl transform rotate-[-6deg] scale-[0.9] transition-all duration-500"></div>
+            <div className="absolute inset-0 border border-white/20 bg-white/5 backdrop-blur-xl rounded-3xl shadow-xl transform rotate-[3deg] scale-[0.95] transition-all duration-500"></div>
+            <div className="card-3d relative p-8 backdrop-blur-sm bg-white/80 rounded-3xl shadow-lg border border-white/40 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 opacity-30"></div>
+              <div className="relative">
+                <h3 className="text-xl font-semibold mb-6 text-center">Career Fit Analyzer</h3>
+                <div className="flex items-center mb-8">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                  </div>
+                  <div className="ml-4">
+                    <h4 className="font-medium">Personalized Analysis</h4>
+                    <p className="text-sm text-foreground/70">Based on your unique profile</p>
+                  </div>
+                </div>
+                <button className="w-full py-3 rounded-lg bg-gradient-primary text-white font-medium transition-all hover:shadow-lg">
+                  Start Assessment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 animate-bounce">
+        <a href="#how-it-works" className="inline-block text-foreground/50">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M7 13l5 5 5-5"></path>
+            <path d="M7 6l5 5 5-5"></path>
+          </svg>
+        </a>
+      </div>
+    </div>
+  );
+};
 
-export default Hero; 
+export default Hero;
