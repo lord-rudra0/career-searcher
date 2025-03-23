@@ -44,12 +44,12 @@ const Navbar = () => {
           >
             Home
           </Link>
-          {/* <Link 
+          <Link 
             to="/test" 
             className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
           >
             Take Test
-          </Link> */}
+          </Link>
         </nav>
         
         <div className="flex items-center space-x-4">

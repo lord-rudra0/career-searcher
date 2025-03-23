@@ -20,8 +20,9 @@ import questionsData from '../questions.json';
 import api from '../services/api';
 import CareerRoadmap from './CareerRoadmap';
 import LoadingSpinner from './LoadingSpinner';
-// import ChatBot from './components/ChatBot';
-// import Navbar from './components/Navbar';
+import ChatBot from './ChatBot'
+import Navbar from './Navbar';
+import Footer from './Footer';
 
 function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -350,10 +351,7 @@ function App() {
   if (careerResults) {
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
-        {/* Header */}
-       {/* <Navbar /> */}
-
-        {/* Main Content */}
+        <Navbar />
         <main className="flex-grow container mx-auto px-4 pt-28 pb-20">
           {showLoader && <LoadingSpinner />}
 
@@ -457,23 +455,7 @@ function App() {
           )}
         </main>
 
-        {/* Add ChatBot component */}
-        <div className="container mx-auto px-4 py-8">
-        
-        </div>
-
-        {/* Footer */}
-        <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white py-6 px-4">
-          <div className="max-w-6xl mx-auto text-center">
-            <div className="flex items-center justify-center space-x-2 mb-3">
-              <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" />
-              <span className="text-gray-400">Powered by Advanced AI</span>
-            </div>
-            <p className="text-sm text-gray-400">
-              Guiding you towards your ideal career path
-            </p>
-          </div>
-        </footer>
+        <Footer />
       </div>
     );
   }
@@ -482,10 +464,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
-      {/* Header */}
-      
-
-      {/* Main Content */}
+      <Navbar />
       <main className="flex-grow container mx-auto px-4 pt-28 pb-20">
         {showLoader && <LoadingSpinner />}
 
@@ -793,26 +772,7 @@ function App() {
         )}
       </main>
 
-      {/* Add ChatBot component */}
-      <div className="container mx-auto px-4 py-8">
-        <div className>
-         
-          <ChatBot />
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="bg-gradient-to-r from-gray-800 to-gray-900 text-white py-6 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="flex items-center justify-center space-x-2 mb-3">
-            <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" />
-            <span className="text-gray-400">Powered by Advanced AI</span>
-          </div>
-          <p className="text-sm text-gray-400">
-            Guiding you towards your ideal career path
-          </p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
