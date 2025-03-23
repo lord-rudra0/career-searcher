@@ -12,6 +12,7 @@ import Profile from "./pages/Profile.jsx";
 import NotFound from "./pages/NotFound.jsx";
 // import HomePage from './components/HomePage';
 import QuesRes from './components/Ques_res';
+import ChatBot from './components/ChatBot';
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <ChatBot />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

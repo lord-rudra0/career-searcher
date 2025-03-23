@@ -36,7 +36,7 @@ const ChatBot = () => {
     };
 
     return (
-        <div className="fixed bottom-8 right-8 z-50">
+        <div className="fixed bottom-4 right-4 z-50">
             {/* Chat Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
@@ -49,7 +49,7 @@ const ChatBot = () => {
 
             {/* Chat Window */}
             <div
-                className={`transform transition-all duration-300 ease-in-out ${
+                className={`transform transition-all duration-300 ease-in-out fixed bottom-20 right-4 ${
                     isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-0'
                 }`}
                 style={{ width: '350px' }}

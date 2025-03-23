@@ -20,7 +20,7 @@ import questionsData from '../questions.json';
 import api from '../services/api';
 import CareerRoadmap from './CareerRoadmap';
 import LoadingSpinner from './LoadingSpinner';
-import ChatBot from './ChatBot'
+// import ChatBot from './ChatBot'
 import Navbar from './Navbar';
 import Footer from './Footer';
 
