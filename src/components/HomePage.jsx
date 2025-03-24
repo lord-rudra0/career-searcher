@@ -44,6 +44,7 @@ function HomePage() {
                         <p className="mb-4 text-lg text-gray-700">Choose an option to start your test:</p>
                         <div className="grid grid-cols-2 gap-4 mb-6">
                             {['Option 1', 'Option 2', 'Option 3', 'Option 4'].map((option, index) => (
+                                
                                 <button
                                     key={index}
                                     onClick={() => handleOptionSelect(index)}
