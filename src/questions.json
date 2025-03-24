@@ -1,119 +1,452 @@
 {
-  "predefinedQuestions": [
-    {
-      "id": 1,
-      "question": "What type of activities energize you the most?",
-      "type": "mcq",
-      "options": [
-        "Solving complex problems and puzzles",
-        "Creating art or expressing creativity",
-        "Helping and interacting with people",
-        "Working with physical objects or machines"
-      ]
-    },
-    {
-      "id": 2,
-      "question": "How do you prefer to approach problems?",
-      "type": "mcq",
-      "options": [
-        "Systematic and analytical thinking",
-        "Creative and intuitive solutions",
-        "Collaborative discussion with others",
-        "Hands-on experimentation"
-      ]
-    },
-    {
-      "id": 3,
-      "question": "Which subject area interests you the most?",
-      "type": "mcq",
-      "options": [
-        "Science and Mathematics",
-        "Arts and Humanities",
-        "Social Sciences and Communication",
-        "Technology and Engineering"
-      ]
-    },
-    {
-      "id": 4,
-      "question": "What's your ideal work environment?",
-      "type": "mcq",
-      "options": [
-        "Structured office setting",
-        "Creative studio or flexible space",
-        "Various locations with different people",
-        "Outdoor or hands-on environment"
-      ]
-    },
-    {
-      "id": 5,
-      "question": "How do you prefer to work?",
-      "type": "mcq",
-      "options": [
-        "Independently on focused tasks",
-        "In small collaborative teams",
-        "Leading and directing others",
-        "Flexible mix of solo and team work"
-      ]
-    },
-    {
-      "id": 6,
-      "question": "What motivates you most at work?",
-      "type": "mcq",
-      "options": [
-        "Achievement and recognition",
-        "Creative freedom and expression",
-        "Helping others and making impact",
-        "Learning and personal growth"
-      ]
-    },
-    {
-      "id": 7,
-      "question": "What's your preferred pace of work?",
-      "type": "mcq",
-      "options": [
-        "Fast-paced with multiple deadlines",
-        "Steady and methodical",
-        "Variable depending on projects",
-        "Relaxed with flexible schedules"
-      ]
-    },
-    {
-      "id": 8,
-      "question": "Which skill would you most like to develop?",
-      "type": "mcq",
-      "options": [
-        "Technical and analytical skills",
-        "Creative and design abilities",
-        "Leadership and management",
-        "Communication and interpersonal skills"
-      ]
-    },
-    {
-      "id": 9,
-      "question": "What type of impact do you want to make?",
-      "type": "mcq",
-      "options": [
-        "Innovating and advancing technology",
-        "Creating and inspiring others",
-        "Helping people and communities",
-        "Building and improving systems"
-      ]
-    },
-    {
-      "id": 10,
-      "question": "What's your preferred work-life balance?",
-      "type": "mcq",
-      "options": [
-        "Traditional 9-5 with clear boundaries",
-        "Flexible hours with remote options",
-        "Project-based with varying schedules",
-        "Standard hours with occasional overtime"
-      ]
-    }
-  ]
+  "predefinedQuestions": {
+    "1": [
+      {
+        "id": 1,
+        "question": "What type of activities do you enjoy the most?",
+        "type": "mcq",
+        "options": [
+          "Solving puzzles and math problems",
+          "Drawing or writing stories",
+          "Playing team sports",
+          "Building things with hands"
+        ]
+      },
+      {
+        "id": 2,
+        "question": "Which school subject do you enjoy the most?",
+        "type": "mcq",
+        "options": [
+          "Mathematics",
+          "English or Arts",
+          "Social Studies",
+          "Science and Experiments"
+        ]
+      },
+      {
+        "id": 3,
+        "question": "How do you prefer to learn new concepts?",
+        "type": "mcq",
+        "options": [
+          "Reading books and studying notes",
+          "Watching videos and visual learning",
+          "Discussing with friends",
+          "Learning by doing experiments"
+        ]
+      },
+      {
+        "id": 4,
+        "question": "What extracurricular activities do you enjoy?",
+        "type": "mcq",
+        "options": [
+          "Sports and athletics",
+          "Music and dance",
+          "Science and robotics clubs",
+          "Volunteering and social work"
+        ]
+      },
+      {
+        "id": 5,
+        "question": "What is your favorite way to spend free time?",
+        "type": "mcq",
+        "options": [
+          "Playing games or coding",
+          "Drawing or writing",
+          "Watching educational content",
+          "Exploring and experimenting"
+        ]
+      },
+      {
+        "id": 6,
+        "question": "How do you like to work on school projects?",
+        "type": "mcq",
+        "options": [
+          "Individually with full focus",
+          "In small groups with discussions",
+          "Presenting and leading the team",
+          "Using hands-on approaches"
+        ]
+      },
+      {
+        "id": 7,
+        "question": "Which career path interests you the most?",
+        "type": "mcq",
+        "options": [
+          "Scientist or Engineer",
+          "Artist or Writer",
+          "Doctor or Teacher",
+          "Entrepreneur or Businessperson"
+        ]
+      },
+      {
+        "id": 8,
+        "question": "What motivates you to study?",
+        "type": "mcq",
+        "options": [
+          "Curiosity and love for learning",
+          "Creativity and self-expression",
+          "Making a positive impact",
+          "Achieving personal goals"
+        ]
+      },
+      {
+        "id": 9,
+        "question": "How do you prefer to solve problems?",
+        "type": "mcq",
+        "options": [
+          "Logical thinking and analysis",
+          "Using creativity and innovation",
+          "Talking and collaborating",
+          "Hands-on trial and error"
+        ]
+      },
+      {
+        "id": 10,
+        "question": "What type of books do you like to read?",
+        "type": "mcq",
+        "options": [
+          "Science and technology books",
+          "Fiction and storytelling",
+          "History and biographies",
+          "Business and self-improvement"
+        ]
+      }
+    ],
+    "2": [
+      {
+        "id": 1,
+        "question": "How do you prefer to study?",
+        "type": "mcq",
+        "options": [
+          "By understanding concepts deeply",
+          "Through creative learning techniques",
+          "By discussing with friends",
+          "Through practical applications"
+        ]
+      },
+      {
+        "id": 2,
+        "question": "Which field interests you the most?",
+        "type": "mcq",
+        "options": [
+          "Engineering and Technology",
+          "Arts and Literature",
+          "Business and Management",
+          "Medical and Life Sciences"
+        ]
+      },
+      {
+        "id": 3,
+        "question": "What kind of projects do you enjoy working on?",
+        "type": "mcq",
+        "options": [
+          "Research based projects",
+          "Creative arts projects",
+          "Business simulations",
+          "Lab experiments"
+        ]
+      },
+      {
+        "id": 4,
+        "question": "What aspect of your favorite subjects do you like the most?",
+        "type": "mcq",
+        "options": [
+          "The logical problem solving",
+          "The ability to express ideas",
+          "The practical application",
+          "The discovery of new information"
+        ]
+      },
+      {
+        "id": 5,
+        "question": "Which type of learning environment do you prefer?",
+        "type": "mcq",
+        "options": [
+          "Structured lectures",
+          "Interactive workshops",
+          "Group discussions",
+          "Independent study"
+        ]
+      },
+      {
+        "id": 6,
+        "question": "What are your career aspirations?",
+        "type": "mcq",
+        "options": [
+          "Innovating new technology",
+          "Creating impactful art",
+          "Leading a successful business",
+          "Contributing to medical advancements"
+        ]
+      },
+      {
+        "id": 7,
+        "question": "How do you handle challenging problems?",
+        "type": "mcq",
+        "options": [
+          "Breaking down the problem logically",
+          "Thinking creatively for solutions",
+          "Seeking advice and collaboration",
+          "Experimenting with different approaches"
+        ]
+      },
+      {
+        "id": 8,
+        "question": "What is your preferred method of presenting your work?",
+        "type": "mcq",
+        "options": [
+          "Technical reports",
+          "Artistic presentations",
+          "Business proposals",
+          "Scientific presentations"
+        ]
+      },
+      {
+        "id": 9,
+        "question": "What kind of skills do you want to develop?",
+        "type": "mcq",
+        "options": [
+          "Analytical and problem-solving skills",
+          "Creative and communication skills",
+          "Leadership and management skills",
+          "Research and practical skills"
+        ]
+      },
+      {
+        "id": 10,
+        "question": "What are your goals for higher education?",
+        "type": "mcq",
+        "options": [
+          "Specializing in a technical field",
+          "Pursuing a career in the arts",
+          "Gaining business expertise",
+          "Contributing to scientific research"
+        ]
+      }
+    ],
+    "3": [
+      {
+        "id": 1,
+        "question": "What motivates you to pursue higher education?",
+        "type": "mcq",
+        "options": [
+          "Career growth and opportunities",
+          "Passion for learning",
+          "Networking and social interactions",
+          "Hands-on experience and research"
+        ]
+      },
+      {
+        "id": 2,
+        "question": "What type of projects do you enjoy working on?",
+        "type": "mcq",
+        "options": [
+          "Technical and coding projects",
+          "Creative and design-based projects",
+          "Business case studies",
+          "Experimental and research projects"
+        ]
+      },
+      {
+        "id": 3,
+        "question": "What kind of internships are you interested in?",
+        "type": "mcq",
+        "options": [
+          "Software development internships",
+          "Design or marketing internships",
+          "Finance or management internships",
+          "Research or lab internships"
+        ]
+      },
+      {
+        "id": 4,
+        "question": "What are your preferred methods for learning?",
+        "type": "mcq",
+        "options": [
+          "Online courses and tutorials",
+          "Workshops and seminars",
+          "Group study sessions",
+          "Practical experiments and fieldwork"
+        ]
+      },
+      {
+        "id": 5,
+        "question": "How do you balance academic work with extracurricular activities?",
+        "type": "mcq",
+        "options": [
+          "Time management and scheduling",
+          "Prioritizing tasks",
+          "Delegating responsibilities",
+          "Finding a balance between both"
+        ]
+      },
+      {
+        "id": 6,
+        "question": "What are your career goals after graduation?",
+        "type": "mcq",
+        "options": [
+          "Working in a tech company",
+          "Pursuing a career in the arts",
+          "Entering the business world",
+          "Contributing to scientific advancement"
+        ]
+      },
+      {
+        "id": 7,
+        "question": "What kind of skills are you looking to develop during your college years?",
+        "type": "mcq",
+        "options": [
+          "Advanced technical skills",
+          "Creative and communication skills",
+          "Leadership and management skills",
+          "Research and analytical skills"
+        ]
+      },
+      {
+        "id": 8,
+        "question": "How do you prefer to collaborate with your peers?",
+        "type": "mcq",
+        "options": [
+          "Through online platforms and coding projects",
+          "In creative workshops and brainstorming sessions",
+          "In team-based business simulations and case studies",
+          "In lab experiments and research groups"
+        ]
+      },
+      {
+        "id": 9,
+        "question": "What type of college environment do you thrive in?",
+        "type": "mcq",
+        "options": [
+          "Fast-paced and technology-driven",
+          "Creative and artistically stimulating",
+          "Competitive and business-oriented",
+          "Research-focused and academically rigorous"
+        ]
+      },
+      {
+        "id": 10,
+        "question": "What is the most important factor for you when choosing a future career?",
+        "type": "mcq",
+        "options": [
+          "Innovation and technological impact",
+          "Creative expression and societal impact",
+          "Financial stability and career growth",
+          "Intellectual challenge and contribution to knowledge"
+        ]
+      }
+    ],
+    "4": [
+      {
+        "id": 1,
+        "question": "What is your primary goal for pursuing postgraduate studies?",
+        "type": "mcq",
+        "options": [
+          "Specialization in my field",
+          "Transitioning to a new career",
+          "Research and innovation",
+          "Higher salary and job security"
+        ]
+      },
+      {
+        "id": 2,
+        "question": "Which area of research excites you the most?",
+        "type": "mcq",
+        "options": [
+          "Technology and AI",
+          "Humanities and Social Sciences",
+          "Business and Economics",
+          "Medical and Health Sciences"
+        ]
+      },
+      {
+        "id": 3,
+        "question": "What kind of research methodologies are you most interested in?",
+        "type": "mcq",
+        "options": [
+          "Quantitative analysis and data science",
+          "Qualitative research and case studies",
+          "Experimental design and lab work",
+          "Interdisciplinary and mixed methods"
+        ]
+      },
+      {
+        "id": 4,
+        "question": "What are your expectations for the postgraduate learning environment?",
+        "type": "mcq",
+        "options": [
+          "Advanced seminars and research labs",
+          "Collaborative workshops and peer review",
+          "Industry partnerships and practical applications",
+          "Independent research and academic conferences"
+        ]
+      },
+      {
+        "id": 5,
+        "question": "How do you plan to contribute to your field of study?",
+        "type": "mcq",
+        "options": [
+          "Developing new technologies and applications",
+          "Publishing influential research and critiques",
+          "Leading innovative business strategies and initiatives",
+          "Advancing medical knowledge and treatments"
+        ]
+      },
+      {
+        "id": 6,
+        "question": "What type of career path are you aiming for after completing your postgraduate studies?",
+        "type": "mcq",
+        "options": [
+          "Research and development roles",
+          "Academic or policy positions",
+          "Executive or entrepreneurial roles",
+          "Clinical or medical research roles"
+        ]
+      },
+      {
+        "id": 7,
+        "question": "What skills do you hope to refine during your postgraduate program?",
+        "type": "mcq",
+        "options": [
+          "Advanced technical and programming skills",
+          "Critical thinking and analytical writing skills",
+          "Strategic planning and business acumen",
+          "Specialized research and clinical skills"
+        ]
+      },
+      {
+        "id": 8,
+        "question": "How do you prefer to disseminate your research findings?",
+        "type": "mcq",
+        "options": [
+          "Through technical publications and conferences",
+          "Through academic journals and public presentations",
+          "Through business reports and industry forums",
+          "Through medical journals and clinical trials"
+        ]
+      },
+      {
+        "id": 9,
+        "question": "What impact do you hope your postgraduate studies will have?",
+        "type": "mcq",
+        "options": [
+          "Driving technological innovation and progress",
+          "Influencing social policy and cultural understanding",
+          "Improving business practices and economic development",
+          "Advancing medical treatments and public health"
+        ]
+      },
+      {
+        "id": 10,
+        "question": "What is your primary motivation for pursuing advanced research?",
+        "type": "mcq",
+        "options": [
+          "Advancing the frontiers of technology",
+          "Contributing to human knowledge and understanding",
+          "Developing sustainable business solutions",
+          "Improving human health and well-being"
+        ]
+      }
+    ]
+  }
 }
-
-
-
-
-

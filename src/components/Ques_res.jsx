@@ -23,6 +23,7 @@ import LoadingSpinner from './LoadingSpinner';
 // import ChatBot from './ChatBot'
 import Navbar from './Navbar';
 import Footer from './Footer';
+import { useSearchParams } from 'react-router-dom';
 
 function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -40,11 +41,28 @@ function App() {
   const [webCareerResults, setWebCareerResults] = useState(null);
   const [isWebSearching, setIsWebSearching] = useState(false);
   const [pdfCareerResults, setPdfCareerResults] = useState(null);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    // Initialize with predefined questions
-    setAllQuestions(questionsData.predefinedQuestions);
-  }, []);
+    const option = searchParams.get('option');
+    let selectedQuestions = [];
+
+    if (option) {
+      const optionNumber = parseInt(option, 10);
+      if (questionsData.predefinedQuestions[optionNumber]) {
+        selectedQuestions = questionsData.predefinedQuestions[optionNumber];
+        console.log(`Loaded questions for option ${optionNumber}`);
+      } else {
+        console.error(`Option ${optionNumber} not found in questions.json`);
+        setError("Failed to load questions for selected option.");
+        return;
+      }
+    } else {
+      selectedQuestions = questionsData.predefinedQuestions['1'];
+      console.log("Loaded default questions (option 1)");
+    }
+    setAllQuestions(selectedQuestions);
+  }, [searchParams]);
 
   const handleSelectAnswer = (option) => {
     setCurrentAnswer(option);
@@ -122,30 +140,33 @@ function App() {
       const updatedAnswers = [...answers, newAnswer];
       setAnswers(updatedAnswers);
 
-      // Generate AI question after predefined questions
-      if (currentQuestionIndex >= questionsData.predefinedQuestions.length - 1 &&
-        allQuestions.length < 20) {
+      // Generate AI question after predefined questions are finished
+      if (currentQuestionIndex >= allQuestions.length - 1) {
+        if (updatedAnswers.length < 20) {
+          console.log('\nStarting AI Question Generation');
+          console.log('Predefined Questions Completed:', allQuestions.length);
+          console.log('Current Total Answers:', updatedAnswers.length);
 
-        console.log('\nStarting AI Question Generation');
-        console.log('Predefined Questions Completed:', questionsData.predefinedQuestions.length);
-        console.log('Current Total Questions:', allQuestions.length);
+          setIsGeneratingQuestion(true);
+          const success = await generateNextAIQuestion(updatedAnswers);
 
-        setIsGeneratingQuestion(true);
-        const success = await generateNextAIQuestion(updatedAnswers);
-
-        if (!success) {
-          throw new Error('Failed to generate next question. Please try again.');
+          if (!success) {
+            throw new Error('Failed to generate next question. Please try again.');
+          }
+        } else {
+          console.log('\nMaximum AI questions reached, proceeding to analysis');
+          handleFinish(updatedAnswers);
+          return;
         }
       }
 
-      // Proceed to next question
+      // Proceed to next question if not the last question of the current set
       if (currentQuestionIndex < allQuestions.length - 1) {
         console.log('\nMoving to next question');
         setCurrentQuestionIndex(prev => prev + 1);
         setCurrentAnswer('');
-      } else if (updatedAnswers.length >= 20) {
-        console.log('\nAll questions completed, proceeding to analysis');
-        handleFinish(updatedAnswers);
+      } else {
+        console.log('\nEnd of predefined questions, potentially moving to AI or analysis');
       }
 
     } catch (err) {
