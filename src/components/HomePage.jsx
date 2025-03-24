@@ -16,7 +16,7 @@ function HomePage() {
 
     const handleTakeTest = () => {
         if (selectedOption !== null) {
-            navigate(`/test?option=${selectedOption + 1}`); // Navigate with selected option index
+            navigate(`/test/questions?option=${selectedOption + 1}`); // Navigate to /test/questions with option
         } else {
             alert("Please select an option before taking the test.");
         }

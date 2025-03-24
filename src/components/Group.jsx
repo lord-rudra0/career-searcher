@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { Book, GraduationCap, School, Trophy } from "lucide-react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import { useNavigate } from 'react-router-dom';
 
 function Group() {
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const navigate = useNavigate();
 
   const categories = [
     {
@@ -38,8 +40,7 @@ function Group() {
   };
 
   const handleContinue = () => {
-    // Redirect to /test with the selected category as a query parameter
-    window.location.href = `/test?category=${selectedCategory}`;
+    navigate(`/test/questions?option=${selectedCategory}`);
   };
 
   return (

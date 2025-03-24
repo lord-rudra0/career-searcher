@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound.jsx";
 // import HomePage from './components/HomePage';
 import QuesRes from './components/Ques_res';
 import ChatBot from './components/ChatBot';
+import Group from "./components/Group";
 
 const queryClient = new QueryClient();
 
@@ -25,7 +26,8 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/test" element={<QuesRes />} />
+            <Route path="/test" element={<Group />} />
+            <Route path="/test/questions" element={<QuesRes />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/profile" element={<Profile />} />
