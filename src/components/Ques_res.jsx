@@ -42,16 +42,35 @@ function App() {
   const [isWebSearching, setIsWebSearching] = useState(false);
   const [pdfCareerResults, setPdfCareerResults] = useState(null);
   const [searchParams] = useSearchParams();
+  const [groupName, setGroupName] = useState(null);
 
   useEffect(() => {
     const option = searchParams.get('option');
     let selectedQuestions = [];
+    let currentGroupName = null;
 
     if (option) {
       const optionNumber = parseInt(option, 10);
       if (questionsData.predefinedQuestions[optionNumber]) {
         selectedQuestions = questionsData.predefinedQuestions[optionNumber];
         console.log(`Loaded questions for option ${optionNumber}`);
+
+        switch (optionNumber) {
+          case 1:
+            currentGroupName = "Class 9-10";
+            break;
+          case 2:
+            currentGroupName = "Class 11-12";
+            break;
+          case 3:
+            currentGroupName = "UnderGraduate Student";
+            break;
+          case 4:
+            currentGroupName = "PostGraduate";
+            break;
+          default:
+            currentGroupName = "Unknown Group";
+        }
       } else {
         console.error(`Option ${optionNumber} not found in questions.json`);
         setError("Failed to load questions for selected option.");
@@ -59,9 +78,11 @@ function App() {
       }
     } else {
       selectedQuestions = questionsData.predefinedQuestions['1'];
+      currentGroupName = "Class 9-10";
       console.log("Loaded default questions (option 1)");
     }
     setAllQuestions(selectedQuestions);
+    setGroupName(currentGroupName);
   }, [searchParams]);
 
   const handleSelectAnswer = (option) => {
@@ -183,6 +204,7 @@ function App() {
 
   const handleFinish = async (finalAnswers) => {
     console.log('\n=== Starting Final Analysis ===');
+    console.log('Selected Group:', groupName);
     console.log('Total Questions Answered:', finalAnswers.length);
     console.log('All Questions and Answers:');
     finalAnswers.forEach((qa, index) => {
@@ -197,7 +219,7 @@ function App() {
     while (retryCount <= maxRetries) {
       try {
         console.log('Attempting analysis...', { attempt: retryCount + 1 });
-        const response = await api.analyzeAnswers(finalAnswers);
+        const response = await api.analyzeAnswers(finalAnswers, groupName);
         
         if (!response.ai_generated_careers || !response.pdf_based_careers) {
           throw new Error('Invalid response format');

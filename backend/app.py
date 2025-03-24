@@ -118,10 +118,13 @@ Requirements:
 def analyze_answers():
     try:
         data = request.json
-        all_answers = data.get('answers', [])
+        all_answers = data.get('final_answers', [])
+        group_name = data.get('group_name')
+
+        print(f"\n=== Analyzing Answers for Group: {group_name} ===")
 
         # Step 1: Generate detailed analysis with the first AI
-        analysis_prompt = f"""Analyze these career-related responses:
+        analysis_prompt = f"""Analyze these career-related responses for a student in the '{group_name}' category:
         {json.dumps(all_answers, indent=2)}
         
         Provide a detailed analysis of the person's:
@@ -156,14 +159,13 @@ def analyze_answers():
         29. Work-related motivation
         30. Work-related satisfaction
         
-        
         """
 
         analysis_response = summary_ai.generate_content(analysis_prompt)
         detailed_analysis = analysis_response.text
 
         # Step 2: Generate career recommendations with the second AI
-        career_prompt = f"""Based on this analysis:
+        career_prompt = f"""Based on this analysis for a '{group_name}' student:
         {detailed_analysis}
         
         Recommend 5 best-matching careers. Format as JSON array:

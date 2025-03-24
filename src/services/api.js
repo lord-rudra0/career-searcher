@@ -53,10 +53,13 @@ const api = {
         }
     },
 
-    analyzeAnswers: async (answers) => {
+    analyzeAnswers: async (answers, groupName) => {
         try {
             console.log('Sending answers for analysis:', answers);
-            const response = await axiosInstance.post('/analyze-answers', { answers });
+            const response = await axiosInstance.post('/analyze-answers', {
+                answers: answers,
+                group_name: groupName
+            });
             
             if (!response.data) {
                 throw new Error('No data received from server');
