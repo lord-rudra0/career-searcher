@@ -115,112 +115,112 @@
     "2": [
       {
         "id": 1,
-        "question": "How do you prefer to study?",
+        "question": "Which type of activities do you enjoy the most?",
         "type": "mcq",
         "options": [
-          "By understanding concepts deeply",
-          "Through creative learning techniques",
-          "By discussing with friends",
-          "Through practical applications"
+          "Solving puzzles and logical problems",
+          "Conducting experiments and exploring new ideas",
+          "Reading and analyzing stories or articles",
+          "Discussing and debating different viewpoints"
         ]
       },
       {
         "id": 2,
-        "question": "Which field interests you the most?",
+        "question": "How do you prefer to study and retain information?",
         "type": "mcq",
         "options": [
-          "Engineering and Technology",
-          "Arts and Literature",
-          "Business and Management",
-          "Medical and Life Sciences"
+          "By practicing problems repeatedly",
+          "By watching videos and visual explanations",
+          "By reading textbooks and taking notes",
+          "By discussing concepts with others"
         ]
       },
       {
         "id": 3,
-        "question": "What kind of projects do you enjoy working on?",
+        "question": "When faced with a difficult challenge, what is your first approach?",
         "type": "mcq",
         "options": [
-          "Research based projects",
-          "Creative arts projects",
-          "Business simulations",
-          "Lab experiments"
+          "Breaking it down into smaller parts and solving step by step",
+          "Looking for real-life examples to relate to the problem",
+          "Researching and gathering information before making a decision",
+          "Discussing it with others to gain different perspectives"
         ]
       },
       {
         "id": 4,
-        "question": "What aspect of your favorite subjects do you like the most?",
+        "question": "Which of the following best describes your problem-solving style?",
         "type": "mcq",
         "options": [
-          "The logical problem solving",
-          "The ability to express ideas",
-          "The practical application",
-          "The discovery of new information"
+          "I prefer structured, logical approaches with clear rules",
+          "I like to experiment and learn through trial and error",
+          "I rely on intuition and creativity to find unique solutions",
+          "I analyze different perspectives before making a decision"
         ]
       },
       {
         "id": 5,
-        "question": "Which type of learning environment do you prefer?",
+        "question": "If given a new project, how would you like to approach it?",
         "type": "mcq",
         "options": [
-          "Structured lectures",
-          "Interactive workshops",
-          "Group discussions",
-          "Independent study"
+          "Planning everything in detail before starting",
+          "Experimenting with different ideas before finalizing an approach",
+          "Researching thoroughly before making any decisions",
+          "Collaborating with others to generate new ideas"
         ]
       },
       {
         "id": 6,
-        "question": "What are your career aspirations?",
+        "question": "Which environment helps you focus and be most productive?",
         "type": "mcq",
         "options": [
-          "Innovating new technology",
-          "Creating impactful art",
-          "Leading a successful business",
-          "Contributing to medical advancements"
+          "A quiet place with minimal distractions",
+          "A dynamic setting with music or background noise",
+          "A collaborative space where I can discuss ideas with others",
+          "A flexible environment where I can switch between different tasks"
         ]
       },
       {
         "id": 7,
-        "question": "How do you handle challenging problems?",
+        "question": "How do you usually handle failure or mistakes?",
         "type": "mcq",
         "options": [
-          "Breaking down the problem logically",
-          "Thinking creatively for solutions",
-          "Seeking advice and collaboration",
-          "Experimenting with different approaches"
+          "I analyze what went wrong and try again with a better plan",
+          "I see it as part of the learning process and move forward",
+          "I take time to reflect on my emotions before attempting again",
+          "I seek feedback from others to improve my approach"
         ]
       },
       {
         "id": 8,
-        "question": "What is your preferred method of presenting your work?",
+        "question": "Which skill do you think is most important for success in the future?",
         "type": "mcq",
         "options": [
-          "Technical reports",
-          "Artistic presentations",
-          "Business proposals",
-          "Scientific presentations"
+          "Critical thinking and problem-solving",
+          "Creativity and innovation",
+          "Communication and teamwork",
+          "Adaptability and learning new skills"
         ]
       },
       {
         "id": 9,
-        "question": "What kind of skills do you want to develop?",
+        "question": "How do you prefer to express your understanding of a topic?",
         "type": "mcq",
         "options": [
-          "Analytical and problem-solving skills",
-          "Creative and communication skills",
-          "Leadership and management skills",
-          "Research and practical skills"
+          "Writing detailed explanations or essays",
+          "Creating visual diagrams or models",
+          "Engaging in discussions and presentations",
+          "Applying it practically through experiments or projects"
         ]
       },
       {
         "id": 10,
-        "question": "What are your goals for higher education?",
+        "question": "What motivates you the most to learn something new?",
         "type": "mcq",
         "options": [
-          "Specializing in a technical field",
-          "Pursuing a career in the arts",
-          "Gaining business expertise",
-          "Contributing to scientific research"
+          "Personal curiosity and passion for the topic",
+          "The challenge of solving complex problems",
+          "The potential for real-world application and impact",
+          "Recognition and opportunities for future success"
         ]
       }
     ],
