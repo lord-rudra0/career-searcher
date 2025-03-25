@@ -206,48 +206,47 @@ function App() {
     console.log('\n=== Starting Final Analysis ===');
     console.log('Selected Group:', groupName);
     console.log('Total Questions Answered:', finalAnswers.length);
-    console.log('All Questions and Answers:');
-    finalAnswers.forEach((qa, index) => {
-      console.log(`\nQ${index + 1}: ${qa.question}`);
-      console.log(`A${index + 1}: ${qa.answer}`);
-    });
 
     setIsAnalyzing(true);
-    let retryCount = 0;
-    const maxRetries = 2;
-
-    while (retryCount <= maxRetries) {
-      try {
-        console.log('Attempting analysis...', { attempt: retryCount + 1 });
-        const response = await api.analyzeAnswers(finalAnswers, groupName);
-        
-        if (!response.ai_generated_careers || !response.pdf_based_careers) {
-          throw new Error('Invalid response format');
-        }
-        
-        setCareerResults(response.ai_generated_careers);
-        setPdfCareerResults(response.pdf_based_careers);
-        console.log('\nAnalysis Complete');
-        console.log('Career Results:', response.ai_generated_careers);
-        break; // Success, exit loop
-        
-      } catch (err) {
-        console.error(`Analysis attempt ${retryCount + 1} failed:`, err);
-        
-        if (retryCount === maxRetries) {
-          setError('Failed to analyze answers. Please try again.');
-          console.error('All analysis attempts failed');
-        } else {
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          retryCount++;
-          continue;
-        }
+    try {
+      const response = await api.analyzeAnswers(finalAnswers, groupName);
+      
+      if (!response.ai_generated_careers || !response.pdf_based_careers) {
+        throw new Error('Invalid response format');
       }
+      
+      setCareerResults(response.ai_generated_careers);
+      setPdfCareerResults(response.pdf_based_careers);
+
+      // Store results in localStorage
+      const resultData = {
+        timestamp: new Date().toISOString(),
+        group: groupName,
+        aiCareers: response.ai_generated_careers,
+        pdfCareers: response.pdf_based_careers
+      };
+
+      // Get existing results or initialize empty array
+      const existingResults = JSON.parse(localStorage.getItem('careerResults') || '[]');
+      
+      // Add new result to the beginning of the array
+      existingResults.unshift(resultData);
+      
+      // Keep only the last 10 results
+      const updatedResults = existingResults.slice(0, 10);
+      
+      // Save to localStorage
+      localStorage.setItem('careerResults', JSON.stringify(updatedResults));
+
+      console.log('Analysis Complete and Results Stored');
+      console.log('Stored Data:', resultData);
+      
+    } catch (err) {
+      console.error('Analysis error:', err);
+      setError(err.message || 'Failed to analyze answers');
+    } finally {
+      setIsAnalyzing(false);
     }
-    
-    setIsAnalyzing(false);
-    console.log('=== End of Analysis ===\n');
   };
 
   const handleSkipQuestion = async () => {

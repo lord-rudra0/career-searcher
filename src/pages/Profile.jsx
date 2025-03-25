@@ -1,131 +1,140 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from "sonner";
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import Navbar from '@/components/Navbar';
-import { Button } from '@/components/ui/button';
-import { UserCircle, Mail, Award, Briefcase } from 'lucide-react';
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Award, BookOpen, Calendar, Sparkles } from 'lucide-react';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+import { Link } from 'react-router-dom';
 
-const Profile = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const navigate = useNavigate();
-  
+function Profile() {
+  const { user } = useAuth();
+  const [assessmentResults, setAssessmentResults] = useState([]);
+
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast.error("Please log in to view your profile");
-      navigate("/signin");
+    if (user) {
+      const storedResults = JSON.parse(localStorage.getItem('careerResults') || '[]');
+      console.log('Loaded stored results:', storedResults);
+      setAssessmentResults(storedResults);
     }
-  }, [isAuthenticated, navigate, isLoading]);
+  }, [user]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen">
-        <Navbar />
-        <div className="pt-32 pb-20">
-          <div className="container mx-auto px-6 md:px-8 text-center">
-            <div className="flex justify-center items-center h-64">
-              <div className="w-6 h-6 border-t-2 border-primary rounded-full animate-spin"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated || !user) {
-    return null;
-  }
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
       <Navbar />
       
-      <div className="pt-32 pb-20">
-        <div className="container mx-auto px-6 md:px-8">
-          <Alert className="mb-6">
-            <AlertDescription>
-              You are now authenticated! This is your protected profile page.
-            </AlertDescription>
-          </Alert>
-          
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-card rounded-xl shadow-lg overflow-hidden">
-              <div className="bg-primary/10 py-10 px-8 text-center">
-                <div className="inline-flex items-center justify-center h-24 w-24 bg-white rounded-full shadow-md mb-4">
-                  <UserCircle className="h-12 w-12 text-primary" />
-                </div>
-                <h1 className="text-2xl font-bold">{user.name}</h1>
-                <div className="flex items-center justify-center mt-2">
-                  <Mail className="h-4 w-4 text-muted-foreground mr-2" />
-                  <p className="text-muted-foreground">{user.email}</p>
-                </div>
-              </div>
-              
-              <div className="p-8">
-                <div className="mb-8">
-                  <h2 className="text-xl font-semibold mb-4">Career Recommendations</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { title: "Software Developer", match: "92%" },
-                      { title: "UX Designer", match: "87%" },
-                      { title: "Data Analyst", match: "78%" },
-                      { title: "Project Manager", match: "73%" }
-                    ].map((career, index) => (
-                      <div key={index} className="p-4 border rounded-lg flex items-start">
-                        <Briefcase className="h-5 w-5 text-primary mt-0.5 mr-3" />
-                        <div>
-                          <h3 className="font-medium">{career.title}</h3>
-                          <p className="text-sm text-muted-foreground">{career.match} match with your profile</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h2 className="text-xl font-semibold mb-4">Skills Assessment</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { title: "Problem Solving", level: "Advanced" },
-                      { title: "Communication", level: "Intermediate" },
-                      { title: "Technical Aptitude", level: "Advanced" },
-                      { title: "Creativity", level: "Intermediate" }
-                    ].map((skill, index) => (
-                      <div key={index} className="p-4 border rounded-lg flex items-start">
-                        <Award className="h-5 w-5 text-primary mt-0.5 mr-3" />
-                        <div>
-                          <h3 className="font-medium">{skill.title}</h3>
-                          <p className="text-sm text-muted-foreground">{skill.level}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* <div className="mt-8 text-center">
-                  <Button onClick={() => navigate("/test")} className="px-8">Take Another Assessment</Button>
-                </div> */}
-              </div>
+      <div className="container mx-auto px-4 pt-28 pb-20">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Your Assessment History
+              </h1>
+              <p className="text-gray-600 mt-2">
+                View your past career assessments and recommendations
+              </p>
             </div>
+
+            {assessmentResults.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-gray-600 mb-6">No assessment results found. Take a career assessment to see your results here!</p>
+                <Link 
+                  to="/test" 
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Take Assessment
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {assessmentResults.map((result, index) => (
+                  <div key={index} className="bg-gray-50 rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center space-x-3">
+                        <Calendar className="w-5 h-5 text-blue-500" />
+                        <span className="text-sm text-gray-600">
+                          {formatDate(result.timestamp)}
+                        </span>
+                      </div>
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                        {result.group}
+                      </span>
+                    </div>
+
+                    {/* AI Generated Careers */}
+                    <div className="mb-6">
+                      <h3 className="flex items-center text-lg font-semibold mb-4">
+                        <Sparkles className="w-5 h-5 text-yellow-500 mr-2" />
+                        AI Recommendations
+                      </h3>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {result.aiCareers.map((career, careerIndex) => (
+                          <div 
+                            key={careerIndex}
+                            className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-gray-800">{career.title}</h4>
+                              <span className="text-sm text-blue-600">{career.match}% Match</span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-2">{career.description}</p>
+                            {career.roadmap && (
+                              <div className="mt-3">
+                                <h5 className="text-sm font-medium text-gray-700 mb-1">Career Path:</h5>
+                                <ul className="text-sm text-gray-600 list-disc list-inside">
+                                  {career.roadmap.map((step, stepIndex) => (
+                                    <li key={stepIndex}>{step}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* PDF Based Careers */}
+                    {result.pdfCareers && result.pdfCareers.length > 0 && (
+                      <div>
+                        <h3 className="flex items-center text-lg font-semibold mb-4">
+                          <BookOpen className="w-5 h-5 text-blue-500 mr-2" />
+                          PDF-Based Matches
+                        </h3>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          {result.pdfCareers.map((career, careerIndex) => (
+                            <div 
+                              key={careerIndex}
+                              className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+                            >
+                              <div className="flex justify-between items-start">
+                                <h4 className="font-medium text-gray-800">{career.title}</h4>
+                                <span className="text-sm text-blue-600">{career.match}% Match</span>
+                              </div>
+                              <p className="text-sm text-gray-600 mt-2">{career.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
       
-      <footer className="py-8 bg-secondary/80">
-        <div className="container px-6 md:px-8 mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="text-xl font-semibold text-foreground mb-4 md:mb-0">
-              career<span className="text-primary">glimpse</span>
-            </div>
-            <div className="text-sm text-foreground/60">
-              © {new Date().getFullYear()} CareerGlimpse. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
-};
+}
 
 export default Profile;
