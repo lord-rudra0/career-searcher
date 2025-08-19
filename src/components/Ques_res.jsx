@@ -585,7 +585,7 @@ function App() {
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         {isGeneratingQuestion ? 'Generating...' : 'Loading...'}
                       </>
-                    ) : currentQuestionIndex < 19 ? (
+                    ) : currentQuestionIndex < allQuestions.length - 1 ? (
                       <>
                         Next
                         <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -739,7 +739,7 @@ function App() {
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       {isGeneratingQuestion ? 'Generating...' : 'Loading...'}
                     </>
-                  ) : currentQuestionIndex < 19 ? (
+                  ) : currentQuestionIndex < allQuestions.length - 1 ? (
                     <>
                       Next
                       <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
