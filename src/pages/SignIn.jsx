@@ -42,7 +42,7 @@ const SignIn = () => {
     try {
       await login(values.email, values.password);
       toast.success("Signed in successfully!");
-      navigate("/profile");
+      navigate("/dashboard");
     } catch (error) {
       setError(error.message || "Failed to sign in. Please check your credentials.");
     }

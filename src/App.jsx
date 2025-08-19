@@ -20,6 +20,7 @@ import ChatBot from './components/ChatBot';
 import Group from "./components/Group";
 import SkillGap from "./pages/SkillGap.jsx";
 import SkillGapList from "./pages/SkillGapList.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/skill-gap" element={<SkillGap />} />
             <Route path="/skill-gap/:id" element={<SkillGap />} />
             <Route path="/skill-gap/list" element={<SkillGapList />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/signin" element={<SignIn />} />
             {/* Back-compat: keep old Profile.jsx but redirect to new nested routes */}
