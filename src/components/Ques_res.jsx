@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles,
   Star,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import questionsData from '../questions.json';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import CareerRoadmap from './CareerRoadmap';
 import LoadingSpinner from './LoadingSpinner';
 // import ChatBot from './ChatBot'
@@ -42,7 +43,42 @@ function App() {
   const [isWebSearching, setIsWebSearching] = useState(false);
   const [pdfCareerResults, setPdfCareerResults] = useState(null);
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [groupName, setGroupName] = useState(null);
+  // Analysis control
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const controllerRef = useRef(null);
+  const timerRef = useRef(null);
+
+  // Map stored groupType to option id used by questions.json
+  const groupTypeToOption = (groupType) => {
+    if (!groupType || typeof groupType !== 'string') return null;
+    const g = groupType.trim().toLowerCase();
+    if (g.includes('9-10') || (g.includes('9') && g.includes('10'))) return 1;
+    if (g.includes('11-12') || (g.includes('11') && g.includes('12'))) return 2;
+    if (g.includes('undergraduate') || g.includes('under graduate') || g === 'ug' || g.includes('college')) return 3;
+    if (g.includes('postgraduate') || g.includes('post graduate') || g === 'pg') return 4;
+    switch (groupType) {
+      case 'Class 9-10': return 1;
+      case 'Class 11-12': return 2;
+      case 'UnderGraduate Student':
+      case 'Undergraduate Student':
+      case 'College Student': return 3;
+      case 'PostGraduate':
+      case 'Post Graduate':
+      case 'PG': return 4;
+      default: return null;
+    }
+  };
+
+  const handleCancelAnalysis = () => {
+    try {
+      controllerRef.current?.abort();
+    } catch {}
+    setIsAnalyzing(false);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+  };
 
   useEffect(() => {
     const option = searchParams.get('option');
@@ -77,13 +113,28 @@ function App() {
         return;
       }
     } else {
-      selectedQuestions = questionsData.predefinedQuestions['1'];
-      currentGroupName = "Class 9-10";
-      console.log("Loaded default questions (option 1)");
+      // No option in URL, try to infer from logged-in user's groupType
+      const inferred = groupTypeToOption(user?.groupType);
+      const optionNumber = inferred || 1;
+      if (questionsData.predefinedQuestions[optionNumber]) {
+        selectedQuestions = questionsData.predefinedQuestions[optionNumber];
+        switch (optionNumber) {
+          case 1: currentGroupName = "Class 9-10"; break;
+          case 2: currentGroupName = "Class 11-12"; break;
+          case 3: currentGroupName = "UnderGraduate Student"; break;
+          case 4: currentGroupName = "PostGraduate"; break;
+          default: currentGroupName = "Class 9-10";
+        }
+        console.log(`Loaded ${inferred ? 'inferred' : 'default'} questions (option ${optionNumber})`);
+      } else {
+        console.error(`Fallback option ${optionNumber} not found in questions.json`);
+        setError("Failed to load questions.");
+        return;
+      }
     }
     setAllQuestions(selectedQuestions);
     setGroupName(currentGroupName);
-  }, [searchParams]);
+  }, [searchParams, user]);
 
   const handleSelectAnswer = (option) => {
     setCurrentAnswer(option);
@@ -208,8 +259,23 @@ function App() {
     console.log('Total Questions Answered:', finalAnswers.length);
 
     setIsAnalyzing(true);
+    setElapsedSec(0);
+    // Setup cancellation and timer
+    controllerRef.current = new AbortController();
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setElapsedSec((s) => s + 1), 1000);
     try {
-      const response = await api.analyzeAnswers(finalAnswers, groupName);
+      const response = await api.analyzeAnswers(
+        finalAnswers,
+        groupName,
+        user?.preferences,
+        {
+          retries: 2,
+          backoffMs: 2000,
+          signal: controllerRef.current.signal,
+          timeoutMs: 130000
+        }
+      );
       
       if (!response.ai_generated_careers || !response.pdf_based_careers) {
         throw new Error('Invalid response format');
@@ -243,11 +309,26 @@ function App() {
       
     } catch (err) {
       console.error('Analysis error:', err);
-      setError(err.message || 'Failed to analyze answers');
+      if (err.name === 'CanceledError' || /cancel/i.test(err.message)) {
+        setError('Analysis was cancelled');
+      } else {
+        setError(err.message || 'Failed to analyze answers');
+      }
     } finally {
       setIsAnalyzing(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = null;
+      controllerRef.current = null;
     }
   };
+
+  // Cleanup on unmount: abort any in-flight analysis
+  useEffect(() => {
+    return () => {
+      try { controllerRef.current?.abort(); } catch {}
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   const handleSkipQuestion = async () => {
     setIsLoading(true);
@@ -472,7 +553,14 @@ function App() {
                 <Compass className="w-20 h-20 text-blue-500 animate-spin-slow" />
                 <Zap className="w-8 h-8 text-yellow-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
               </div>
-              <p className="mt-4 text-xl text-gray-700">Analyzing your responses...</p>
+              <p className="mt-2 text-lg text-gray-700">Analyzing your responses... This may take up to ~2 minutes.</p>
+              <p className="mt-1 text-sm text-gray-500">Elapsed: {elapsedSec}s</p>
+              <button
+                onClick={handleCancelAnalysis}
+                className="mt-4 inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg shadow-sm"
+              >
+                Cancel
+              </button>
             </div>
           )}
 
@@ -585,7 +673,14 @@ function App() {
               <Compass className="w-20 h-20 text-blue-500 animate-spin-slow" />
               <Zap className="w-8 h-8 text-yellow-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
             </div>
-            <p className="mt-4 text-xl text-gray-700">Analyzing your responses...</p>
+            <p className="mt-2 text-lg text-gray-700">Analyzing your responses... This may take up to ~2 minutes.</p>
+            <p className="mt-1 text-sm text-gray-500">Elapsed: {elapsedSec}s</p>
+            <button
+              onClick={handleCancelAnalysis}
+              className="mt-4 inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg shadow-sm"
+            >
+              Cancel
+            </button>
           </div>
         )}
 

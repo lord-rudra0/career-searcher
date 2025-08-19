@@ -16,6 +16,22 @@ const UserSchema = new mongoose.Schema({
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long']
   },
+  // Required group type (e.g., 'Class 9-10', 'Class 11-12', 'Graduate')
+  groupType: { type: String, required: [true, 'Group type is required'] },
+  // Optional location preferences
+  preferences: {
+    jobLocation: {
+      country: { type: String },
+      state: { type: String },
+      district: { type: String },
+    },
+    studyLocation: {
+      // If India: set state/district; if abroad: set country
+      country: { type: String },
+      state: { type: String },
+      district: { type: String },
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -6,14 +6,18 @@ const API_BASE_URL = 'http://localhost:5001';  // Changed from 5000 to 5001
 // Add timeout and retry logic
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 30000,  // Increased from 10000 to 30000
+    timeout: 130000,  // Match backend 120s with a small buffer
     headers: {
         'Content-Type': 'application/json'
     }
 });
 
-// Add request interceptor for logging
+// Add request interceptor for logging and auth
 axiosInstance.interceptors.request.use(request => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        request.headers['x-auth-token'] = token;
+    }
     console.log('Starting Request:', request.method, request.url);
     return request;
 });
@@ -26,6 +30,15 @@ axiosInstance.interceptors.response.use(
     },
     error => {
         console.error('Response Error:', error.message);
+        const status = error.response?.status;
+        if (status === 401) {
+            // Clear invalid/expired token and redirect to signin
+            try { localStorage.removeItem('token'); } catch {}
+            // Avoid infinite redirects if already on signin
+            if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/signin')) {
+                window.location.replace('/signin');
+            }
+        }
         if (error.code === 'ECONNREFUSED') {
             console.error('Server is not running or not accessible');
         }
@@ -53,35 +66,66 @@ const api = {
         }
     },
 
-    analyzeAnswers: async (answers, groupName) => {
-        try {
-            console.log('Sending answers for analysis:', answers);
-            const response = await axiosInstance.post('/analyze-answers', {
-                answers: answers,
-                group_name: groupName
-            });
-            
-            if (!response.data) {
-                throw new Error('No data received from server');
-            }
-            
-            return response.data;
-        } catch (error) {
-            console.error('Analysis error details:', {
-                message: error.message,
-                code: error.code,
-                response: error.response?.data
-            });
-            
-            if (error.code === 'ECONNABORTED') {
-                throw new Error('Analysis request timed out. Please try again.');
-            }
-            
-            throw new Error(
-                error.response?.data?.error || 
-                error.response?.data?.details || 
-                'Failed to analyze answers'
+    analyzeAnswers: async (answers, groupName, preferences, options = {}) => {
+        const { retries = 2, backoffMs = 2000, signal, timeoutMs } = options;
+        let attempt = 0;
+        const payload = {
+            final_answers: answers,
+            group_name: groupName
+        };
+        if (preferences) payload.preferences = preferences;
+
+        // Helper to decide retryable
+        const isRetryable = (error) => {
+            const status = error.response?.status;
+            return (
+                error.code === 'ECONNABORTED' || // timeout
+                !status || // network error
+                (status >= 500 && status < 600)
             );
+        };
+
+        while (true) {
+            try {
+                const response = await axiosInstance.post('/analyze-answers', payload, {
+                    signal,
+                    timeout: timeoutMs || axiosInstance.defaults.timeout,
+                });
+
+                if (!response.data) {
+                    throw new Error('No data received from server');
+                }
+                return response.data;
+            } catch (error) {
+                // Surface cancellation immediately
+                if (axios.isCancel?.(error) || error.name === 'CanceledError') {
+                    throw error; // Let caller handle cancellation message
+                }
+
+                console.error('Analysis error details:', {
+                    message: error.message,
+                    code: error.code,
+                    status: error.response?.status,
+                    response: error.response?.data
+                });
+
+                if (attempt < retries && isRetryable(error)) {
+                    attempt += 1;
+                    const delay = backoffMs * Math.pow(2, attempt - 1);
+                    await new Promise(res => setTimeout(res, delay));
+                    continue; // retry
+                }
+
+                if (error.code === 'ECONNABORTED') {
+                    throw new Error('Analysis request timed out. Please try again.');
+                }
+
+                throw new Error(
+                    error.response?.data?.error || 
+                    error.response?.data?.details || 
+                    'Failed to analyze answers'
+                );
+            }
         }
     },
 
@@ -119,7 +163,22 @@ const api = {
         } catch (error) {
             throw new Error(error.response?.data?.error || 'Failed to search web careers');
         }
+    },
+
+    getCurrentUser: async () => {
+        const res = await axiosInstance.get('/auth/user');
+        return res.data;
+    },
+
+    updateUserProfile: async (payload) => {
+        const res = await axiosInstance.put('/user/profile', payload);
+        return res.data;
+    },
+
+    getUserAnalysisResults: async (limit = 10) => {
+        const res = await axiosInstance.get('/user/analysis-results', { params: { limit } });
+        return res.data;
     }
 };
 
-export default api; 
+export default api;

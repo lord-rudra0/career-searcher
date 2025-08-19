@@ -5,15 +5,10 @@ import { useAuth } from '../../context/AuthContext';
 
 function Register() {
     const navigate = useNavigate();
-    const { register } = useAuth();
+    const { signup } = useAuth();
 
-    const handleRegisterSuccess = async (user) => {
-        try {
-            await register(user.username, user.email, user.password);
-            navigate('/assessment');
-        } catch (error) {
-            console.error('Registration error:', error);
-        }
+    const handleRegisterSuccess = () => {
+        navigate('/assessment');
     };
 
     return (

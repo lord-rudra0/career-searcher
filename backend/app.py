@@ -9,21 +9,42 @@ from googlesearch import search
 import requests
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfReader  # You'll need to install this package first
+import time
+from functools import lru_cache
 
-dotenv.load_dotenv()
+dotenv.load_dotenv(override=True)
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Configure Google API key
-api_key = os.getenv("GEMINI_API_KEY")
-print(f"Using API key: {api_key[:5]}...")  # Print first 5 chars for verification
+api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+if not api_key:
+    # Fail fast with clear message if key is missing
+    raise RuntimeError("Missing API key. Set GEMINI_API_KEY or GOOGLE_API_KEY in backend/.env")
+
+# Basic sanity check to prevent hard-to-debug downstream 400s
+masked = (api_key[:5] + "…") if len(api_key) >= 5 else "(too short)"
+print(f"Using API key (prefix): {masked}")
+if not api_key.startswith("AIza"):
+    print("Warning: API key does not start with 'AIza'. It may be malformed and cause API_KEY_INVALID errors.")
+
 genai.configure(api_key=api_key)
 
 # Initialize Gemini model for each AI function
-question_ai = genai.GenerativeModel("gemini-2.0-flash")
-summary_ai = genai.GenerativeModel("gemini-2.0-flash")
-career_ai = genai.GenerativeModel("gemini-2.0-flash")
+question_ai = genai.GenerativeModel("gemini-1.5-flash")
+summary_ai = genai.GenerativeModel("gemini-1.5-flash")
+career_ai = genai.GenerativeModel("gemini-1.5-flash")
+
+# Cache PDF text to avoid repeated disk I/O and parsing
+@lru_cache(maxsize=1)
+def get_pdf_text():
+    reader = PdfReader("Career-List.pdf")
+    text = ""
+    max_pages = min(8, len(reader.pages))
+    for page in reader.pages[:max_pages]:
+        text += (page.extract_text() or "") + "\n"
+    return text[:15000]
 
 def extract_json_from_text(text):
     """Extract JSON from text that might contain markdown or other content"""
@@ -33,6 +54,61 @@ def extract_json_from_text(text):
         try:
             return json.loads(json_match.group())
         except:
+            return None
+
+def generate_json_array_with_retry(model, prompt, schema_hint=None):
+    """Generate a JSON array with a retry using a stricter prompt if needed.
+    Returns a Python list or raises ValueError.
+    """
+    # First attempt
+    resp = model.generate_content(prompt)
+    raw = (resp.text or "").strip()
+    parsed = extract_json_array_from_text(raw)
+    if parsed is not None:
+        return parsed
+
+    # Second attempt with stricter instructions
+    strict_prompt = (
+        (schema_hint or "") +
+        "\nYou must return ONLY a JSON array, with no surrounding text, no markdown fences, no comments.\n"
+        "If any information appears missing, infer reasonable values based on the analysis.\n"
+        "Output must be valid JSON and parseable as-is."
+    )
+    resp2 = model.generate_content(strict_prompt)
+    raw2 = (resp2.text or "").strip()
+    parsed2 = extract_json_array_from_text(raw2)
+    if parsed2 is not None:
+        return parsed2
+
+    preview = (raw2 or raw)[:200]
+    raise ValueError(f"Failed to parse JSON array after retry. Preview: {preview}")
+    return None
+
+def extract_json_array_from_text(text):
+    """Extract a JSON array from text, tolerant of code fences and extra prose."""
+    # Remove common code fences
+    cleaned = text.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+
+    # Direct attempt
+    try:
+        parsed = json.loads(cleaned)
+        if isinstance(parsed, list):
+            return parsed
+    except Exception:
+        pass
+
+    # Regex fallback to first top-level array
+    arr_match = re.search(r'\[[\s\S]*\]', cleaned)
+    if arr_match:
+        try:
+            return json.loads(arr_match.group())
+        except Exception:
             return None
     return None
 
@@ -117,15 +193,47 @@ Requirements:
 @app.route('/analyze-answers', methods=['POST'])
 def analyze_answers():
     try:
+        t0 = time.time()
         data = request.json
         all_answers = data.get('final_answers', [])
-        group_name = data.get('group_name')
+        group_name = data.get('group_name') or data.get('group_type') or data.get('groupType')
+        # Optional personalization
+        preferences = data.get('preferences', {}) or {}
+        job_loc = preferences.get('jobLocation', {}) or {}
+        study_loc = preferences.get('studyLocation', {}) or {}
+        # Optional previous analysis (sent by Express if user is logged in)
+        previous = data.get('previous_analysis') or {}
+        prev_ai = previous.get('aiCareers') or []
+        prev_pdf = previous.get('pdfCareers') or []
+        prev_group = previous.get('groupName')
 
         print(f"\n=== Analyzing Answers for Group: {group_name} ===")
 
         # Step 1: Generate detailed analysis with the first AI
+        loc_context = f"""
+        Personalization context (optional):
+        - Job location preference: country={job_loc.get('country')}, state={job_loc.get('state')}, district={job_loc.get('district')}
+        - Study location preference: country={study_loc.get('country')}, state={study_loc.get('state')}, district={study_loc.get('district')}
+        """
+        history_context = ""
+        if prev_ai or prev_pdf:
+            try:
+                history_context = f"""
+                Historical context from last session (if any):
+                - Previous group: {prev_group}
+                - Previously recommended AI careers (title, match): {json.dumps(prev_ai)[:600]}
+                - Previously recommended PDF careers (title, match): {json.dumps(prev_pdf)[:600]}
+                Guidance: Avoid repeating identical suggestions unless strongly justified by new answers. If repeating,
+                provide improved colleges or roadmap steps and explain why repetition is beneficial. Prefer building
+                upon prior top matches to deepen specificity (local colleges, certifications, internships).
+                """
+            except Exception:
+                history_context = ""
+
         analysis_prompt = f"""Analyze these career-related responses for a student in the '{group_name}' category:
         {json.dumps(all_answers, indent=2)}
+        {loc_context}
+        {history_context}
         
         Provide a detailed analysis of the person's:
         1. Key strengths
@@ -165,8 +273,34 @@ def analyze_answers():
         detailed_analysis = analysis_response.text
 
         # Step 2: Generate career recommendations with the second AI
+        # Build location constraint guidance for colleges/roadmap
+        def loc_str(parts):
+            return ', '.join([str(v) for v in parts if v])
+        job_where = loc_str([job_loc.get('district'), job_loc.get('state'), job_loc.get('country')])
+        study_where = loc_str([study_loc.get('district'), study_loc.get('state'), study_loc.get('country')])
+        loc_requirements = """
+        When listing colleges and tailoring the roadmap:
+        - If study location is provided, prefer colleges/programs in: {study_where}.
+        - If job location is provided, prefer certifications/internships and market notes relevant to: {job_where}.
+        - For India, mention state/central-level exams or boards when relevant. For abroad, align to the specified country frameworks.
+        Only use these constraints if values are provided; otherwise use globally relevant suggestions.
+        """
+        history_bias = ""
+        if prev_ai:
+            try:
+                top_prev = ", ".join([c.get('title') for c in prev_ai if isinstance(c, dict) and c.get('title')][:5])
+                history_bias = f"""
+                Also consider the user's previous high-match careers: {top_prev}.
+                If consistent with the new analysis, either refine these with better localized colleges and clearer roadmaps,
+                or propose adjacent careers with strong rationale. Avoid exact duplicates without added value.
+                """
+            except Exception:
+                history_bias = ""
+
         career_prompt = f"""Based on this analysis for a '{group_name}' student:
         {detailed_analysis}
+        {loc_requirements}
+        {history_bias}
         
         Recommend 5 best-matching careers. Format as JSON array:
         [
@@ -184,7 +318,7 @@ def analyze_answers():
                         "name": "College/University Name",
                         "program": "Relevant Program",
                         "duration": "Program Duration",
-                        "location": "Location"
+                        "location": "Location (prefer {study_where} if provided)"
                     }}
                 ]
             }}
@@ -193,20 +327,18 @@ def analyze_answers():
         Each match_percentage should be between 75-100.
         """
 
-        career_response = career_ai.generate_content(career_prompt)
-        
-        # Clean and parse the career response
-        cleaned_text = career_response.text.strip()
-        if cleaned_text.startswith("```json"):
-            cleaned_text = cleaned_text[7:]
-        if cleaned_text.endswith("```"):
-            cleaned_text = cleaned_text[:-3]
-        
-        careers = json.loads(cleaned_text)
+        schema_hint = (
+            "Return ONLY a JSON array of 5 objects with keys: 'title' (string), 'match' (number 75-100), 'description' (string),\n"
+            "'roadmap' (array of 3 strings: Entry Level, Mid Level, Senior Level), 'colleges' (array of 3-4 objects with 'name', 'program', 'duration', 'location').\n"
+            f"Base your recommendations strictly on this analysis for '{group_name}':\n{detailed_analysis}"
+        )
+        careers = generate_json_array_with_retry(career_ai, career_prompt, schema_hint)
 
         # Step 3: Get PDF-based career recommendations (new code)
         pdf_careers = get_pdf_career_recommendations(detailed_analysis)
         
+        elapsed = round(time.time() - t0, 2)
+        print(f"Analyze answers completed in {elapsed}s")
         return jsonify({
             "ai_generated_careers": careers,
             "pdf_based_careers": pdf_careers
@@ -219,11 +351,8 @@ def analyze_answers():
 def get_pdf_career_recommendations(detailed_analysis):
     """Extract careers from PDF and match based on analysis"""
     try:
-        # Read the PDF
-        reader = PdfReader("Career-List.pdf")
-        pdf_text = ""
-        for page in reader.pages:
-            pdf_text += page.extract_text()
+        # Use cached PDF text (avoids repeated disk I/O and parsing)
+        pdf_text = get_pdf_text()
 
         # Use AI to analyze and match careers from PDF
         pdf_analysis_prompt = f"""
@@ -243,16 +372,11 @@ def get_pdf_career_recommendations(detailed_analysis):
         ]
         """
 
-        pdf_career_response = career_ai.generate_content(pdf_analysis_prompt)
-        cleaned_pdf_response = pdf_career_response.text.strip()
-        
-        # Clean the response
-        if cleaned_pdf_response.startswith("```json"):
-            cleaned_pdf_response = cleaned_pdf_response[7:]
-        if cleaned_pdf_response.endswith("```"):
-            cleaned_pdf_response = cleaned_pdf_response[:-3]
-        
-        return json.loads(cleaned_pdf_response)
+        schema_hint = (
+            "Return ONLY a JSON array of 5 objects with keys: 'title' (string from PDF list), 'match' (number 75-100), 'description' (string).\n"
+            f"Base your choices strictly on the analysis and the provided PDF careers list."
+        )
+        return generate_json_array_with_retry(career_ai, pdf_analysis_prompt, schema_hint)
 
     except Exception as e:
         print(f"Error in PDF career analysis: {str(e)}")

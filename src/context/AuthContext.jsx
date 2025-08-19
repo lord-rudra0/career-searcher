@@ -29,9 +29,11 @@ export const AuthProvider = ({ children }) => {
         if (response.ok) {
           const userData = await response.json();
           setUser({
-            id: userData._id,
-            name: userData.name,
-            email: userData.email
+            // /auth/user returns: { username, email, groupType, preferences }
+            name: userData.username,
+            email: userData.email,
+            groupType: userData.groupType,
+            preferences: userData.preferences
           });
           setIsAuthenticated(true);
         } else {
@@ -47,6 +49,28 @@ export const AuthProvider = ({ children }) => {
     
     checkAuth();
   }, []);
+
+  const refreshUser = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_URL}/auth/user`, {
+        headers: { 'x-auth-token': token }
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        setUser({
+          name: userData.username,
+          email: userData.email,
+          groupType: userData.groupType,
+          preferences: userData.preferences
+        });
+        setIsAuthenticated(true);
+      }
+    } catch (e) {
+      console.error('Failed to refresh user:', e);
+    }
+  };
 
   const login = async (email, password) => {
     setIsLoading(true);
@@ -66,7 +90,9 @@ export const AuthProvider = ({ children }) => {
       setUser({
         id: userData.id,
         name: userData.username,
-        email: userData.email
+        email: userData.email,
+        groupType: userData.groupType,
+        preferences: userData.preferences
       });
       setIsAuthenticated(true);
       
@@ -78,13 +104,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async (username, email, password) => {
+  const signup = async (username, email, password, groupType, preferences) => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
+        body: JSON.stringify({ username, email, password, groupType, preferences })
       });
 
       const data = await response.json();
@@ -96,7 +122,9 @@ export const AuthProvider = ({ children }) => {
       setUser({
         id: userData.id,
         name: userData.username,
-        email: userData.email
+        email: userData.email,
+        groupType: userData.groupType,
+        preferences: userData.preferences
       });
       setIsAuthenticated(true);
       
@@ -116,7 +144,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, signup, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, signup, logout, isLoading, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -23,6 +23,15 @@ const signUpSchema = z.object({
   username: z.string().min(2, { message: "Username must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  groupType: z.enum(["Class 9-10", "Class 11-12", "UnderGraduate Student", "PostGraduate"], {
+    required_error: "Please select your group type.",
+  }),
+  jobCountry: z.string().optional(),
+  jobState: z.string().optional(),
+  jobDistrict: z.string().optional(),
+  studyCountry: z.string().optional(),
+  studyState: z.string().optional(),
+  studyDistrict: z.string().optional(),
 });
 
 const SignUp = () => {
@@ -36,13 +45,32 @@ const SignUp = () => {
       username: "",
       email: "",
       password: "",
+      groupType: "Class 11-12",
+      jobCountry: "",
+      jobState: "",
+      jobDistrict: "",
+      studyCountry: "",
+      studyState: "",
+      studyDistrict: "",
     },
   });
 
   const onSubmit = async (values) => {
     setError(null);
     try {
-      await signup(values.username, values.email, values.password);
+      const preferences = {
+        jobLocation: {
+          country: values.jobCountry || undefined,
+          state: values.jobState || undefined,
+          district: values.jobDistrict || undefined,
+        },
+        studyLocation: {
+          country: values.studyCountry || undefined,
+          state: values.studyState || undefined,
+          district: values.studyDistrict || undefined,
+        },
+      };
+      await signup(values.username, values.email, values.password, values.groupType, preferences);
       toast.success("Account created successfully!");
       navigate("/profile");
     } catch (error) {
@@ -109,6 +137,115 @@ const SignUp = () => {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="groupType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Group Type</FormLabel>
+                      <FormControl>
+                        <select className="w-full border rounded-md h-10 px-3" {...field}>
+                          <option>Class 9-10</option>
+                          <option>Class 11-12</option>
+                          <option>UnderGraduate Student</option>
+                          <option>PostGraduate</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Job Location (optional)</h3>
+                  <div className="grid grid-cols-1 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="jobCountry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., India" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="jobState"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Karnataka" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="jobDistrict"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>District</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Bengaluru Urban" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Study Location (optional)</h3>
+                  <div className="grid grid-cols-1 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="studyCountry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., India or USA" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="studyState"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Maharashtra" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="studyDistrict"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>District</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Pune" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
                 <Button type="submit" className="w-full py-6" disabled={isLoading}>
                   {isLoading ? (
                     <span className="flex items-center">

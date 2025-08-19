@@ -2,13 +2,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import Index from "./pages/Index.jsx";
 // import Test from "./pages/Test.jsx";
 import SignUp from "./pages/SignUp.jsx";
 import SignIn from "./pages/SignIn.jsx";
 import Profile from "./pages/Profile.jsx";
+import ProfileLayout from "./pages/profile/Layout.jsx";
+import ProfileOverview from "./pages/profile/Overview.jsx";
+import ProfileEdit from "./pages/profile/Edit.jsx";
+import ProfileHistory from "./pages/profile/History.jsx";
 import NotFound from "./pages/NotFound.jsx";
 // import HomePage from './components/HomePage';
 import QuesRes from './components/Ques_res';
@@ -30,7 +34,13 @@ const App = () => (
             <Route path="/test/questions" element={<QuesRes />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/signin" element={<SignIn />} />
-            <Route path="/profile" element={<Profile />} />
+            {/* Back-compat: keep old Profile.jsx but redirect to new nested routes */}
+            <Route path="/profile" element={<Navigate to="/profile/overview" replace />} />
+            <Route path="/profile/*" element={<ProfileLayout />}>
+              <Route path="overview" element={<ProfileOverview />} />
+              <Route path="edit" element={<ProfileEdit />} />
+              <Route path="history" element={<ProfileHistory />} />
+            </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
           <ChatBot />

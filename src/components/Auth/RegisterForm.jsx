@@ -1,17 +1,37 @@
 import React, { useState } from 'react';
-import auth from '../../services/auth';
+import { useAuth } from '../../context/AuthContext';
 
 function RegisterForm({ onSuccess }) {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [groupType, setGroupType] = useState('Class 11-12');
+    const [jobCountry, setJobCountry] = useState('');
+    const [jobState, setJobState] = useState('');
+    const [jobDistrict, setJobDistrict] = useState('');
+    const [studyCountry, setStudyCountry] = useState('');
+    const [studyState, setStudyState] = useState('');
+    const [studyDistrict, setStudyDistrict] = useState('');
     const [error, setError] = useState('');
+    const { signup } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await auth.register(username, email, password);
-            onSuccess(response.user);
+            const preferences = {
+                jobLocation: {
+                    country: jobCountry || undefined,
+                    state: jobState || undefined,
+                    district: jobDistrict || undefined
+                },
+                studyLocation: {
+                    country: studyCountry || undefined,
+                    state: studyState || undefined,
+                    district: studyDistrict || undefined
+                }
+            };
+            await signup(username, email, password, groupType, preferences);
+            onSuccess();
         } catch (err) {
             setError(err.message);
         }
@@ -54,6 +74,42 @@ function RegisterForm({ onSuccess }) {
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
                     required
                 />
+            </div>
+
+            <div>
+                <label className="block text-sm font-medium text-gray-700">
+                    Group Type
+                </label>
+                <select
+                    value={groupType}
+                    onChange={(e) => setGroupType(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                    required
+                >
+                    <option>Class 9-10</option>
+                    <option>Class 11-12</option>
+                    <option>UnderGraduate Student</option>
+                    <option>PostGraduate</option>
+                </select>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Job Location (optional)</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                        <input placeholder="Country" value={jobCountry} onChange={(e) => setJobCountry(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                        <input placeholder="State" value={jobState} onChange={(e) => setJobState(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                        <input placeholder="District" value={jobDistrict} onChange={(e) => setJobDistrict(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                    </div>
+                </div>
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Study Location (optional)</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                        <input placeholder="Country" value={studyCountry} onChange={(e) => setStudyCountry(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                        <input placeholder="State" value={studyState} onChange={(e) => setStudyState(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                        <input placeholder="District" value={studyDistrict} onChange={(e) => setStudyDistrict(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                    </div>
+                </div>
             </div>
             {error && (
                 <div className="text-red-500 text-sm">{error}</div>

@@ -3,10 +3,12 @@ const axios = require('axios');
 const bodyParser = require('body-parser');
 const express = require('express');
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 const passport = require('passport');
 const session = require('express-session');
 const LocalStrategy = require("passport-local").Strategy;
 const User = require("./models/User.js");
+const AnalysisResult = require('./models/AnalysisResult.js');
 const dotenv = require('dotenv');
 // const cors = require('cors');
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
@@ -55,6 +57,63 @@ app.use('/api/auth', authRoutes);
 // Protected route example
 app.get('/api/profile', verifyToken, (req, res) => {
   res.json({ message: 'Protected route accessed successfully', user: req.user });
+});
+
+// Fetch current user's analysis results (requires auth)
+app.get('/user/analysis-results', verifyToken, async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit || '10', 10), 50);
+        const results = await AnalysisResult.find({ userId: req.user.id })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+        res.json({ results });
+    } catch (err) {
+        console.error('Failed to fetch user analysis results:', err.message);
+        res.status(500).json({ error: 'Failed to fetch user analysis results' });
+    }
+});
+
+// Update user profile (username, email, groupType, preferences)
+app.put('/user/profile', verifyToken, async (req, res) => {
+    try {
+        const { username, email, groupType, preferences } = req.body;
+        const update = {};
+        if (typeof username === 'string' && username.trim()) update.username = username.trim();
+        if (typeof email === 'string' && email.trim()) update.email = email.trim().toLowerCase();
+        if (typeof groupType === 'string' && groupType.trim()) update.groupType = groupType.trim();
+        if (preferences && typeof preferences === 'object') update.preferences = preferences;
+
+        // If email is being updated, ensure uniqueness
+        if (update.email) {
+            const existing = await User.findOne({ email: update.email, _id: { $ne: req.user.id } }).select('_id');
+            if (existing) {
+                return res.status(400).json({ message: 'Email already in use' });
+            }
+        }
+
+        const user = await User.findByIdAndUpdate(req.user.id, update, { new: true })
+            .select('username email groupType preferences');
+        res.json({ user });
+    } catch (err) {
+        console.error('Failed to update profile:', err.message);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
+// Update user preferences (locations) and groupType
+app.put('/user/preferences', verifyToken, async (req, res) => {
+  try {
+    const { preferences, groupType } = req.body;
+    const update = {};
+    if (preferences) update.preferences = preferences;
+    if (groupType) update.groupType = groupType;
+    const user = await User.findByIdAndUpdate(req.user.id, update, { new: true }).select('username email groupType preferences');
+    res.json({ user });
+  } catch (err) {
+    console.error('Failed to update preferences:', err.message);
+    res.status(500).json({ error: 'Failed to update preferences' });
+  }
 });
 
 // Health check route
@@ -116,8 +175,17 @@ app.post("/auth/login", async (req, res, next) => {
     // Generate a token
     const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1h' }); // Token expires in 1 hour
 
-    // Send the token and user data back to the client
-    res.json({ token, user: { id: user._id, username: user.username, email: user.email } }); // Include user data
+    // Send the token and user data back to the client (include groupType and preferences)
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        username: user.username, 
+        email: user.email,
+        groupType: user.groupType,
+        preferences: user.preferences
+      } 
+    });
   } catch (err) {
     return next(err); // Handle any errors
   }
@@ -125,7 +193,11 @@ app.post("/auth/login", async (req, res, next) => {
 
 app.post("/auth/register", async (req, res) => {
     try {
-        const { username, email, password } = req.body;
+        const { username, email, password, groupType, preferences } = req.body;
+
+        if (!groupType) {
+            return res.status(400).json({ message: "groupType is required" });
+        }
 
         // Check if the user already exists
         const existingUserByEmail = await User.findOne({ email });
@@ -139,34 +211,30 @@ app.post("/auth/register", async (req, res) => {
         }
 
         // Create a new user
-        const newUser = new User({ username, email, password });
+        const newUser = new User({ username, email, password, groupType, preferences });
         await newUser.save();
 
         // Create JWT token
         const token = jwt.sign({ id: newUser._id, username: newUser.username }, JWT_SECRET, { expiresIn: '7d' });
 
         // Send success message as JSON
-        return res.json({ token, user: { id: newUser._id, username: newUser.username, email: newUser.email } });
+        return res.json({ token, user: { id: newUser._id, username: newUser.username, email: newUser.email, groupType: newUser.groupType, preferences: newUser.preferences } });
     } catch (err) {
         console.error("Registration error:", err); // Log the error for debugging
         return res.status(500).json({ message: "Error registering user" });
     }
 });
 
-app.get("/auth/user", async (req, res) => {
-  if (req.isAuthenticated()) {
-    // Fetch user data from the MongoDB database
-    try {
-      const user = await User.findById(req.user.id).select('username email'); // Get user by ID from the request
-      if (!user) {
-        return res.status(404).send("User not found"); // Handle case where user is not found
-      }
-      return res.json({ username: user.username, email: user.email }); // Send user data
-    } catch (err) {
-      return res.status(500).send("Error retrieving user data"); // Handle any errors
+// Use JWT verification for fetching current user
+app.get("/auth/user", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('username email groupType preferences');
+    if (!user) {
+      return res.status(404).send("User not found");
     }
-  } else {
-    return res.status(401).send("Unauthorized"); // User is not authenticated
+    return res.json({ username: user.username, email: user.email, groupType: user.groupType, preferences: user.preferences });
+  } catch (err) {
+    return res.status(500).send("Error retrieving user data");
   }
 });
 
@@ -212,15 +280,94 @@ app.post('/generate-question', async (req, res) => {
 
 app.post('/analyze-answers', async (req, res) => {
     try {
+        const t0 = Date.now();
         console.log('Received analysis request:', req.body);
-        
+        // Try to identify user from JWT (optional)
+        let userId = undefined;
+        try {
+            const token = req.header('x-auth-token');
+            if (token) {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                userId = decoded?.id;
+            }
+        } catch (e) {
+            // Non-fatal; proceed unauthenticated
+        }
+
+        // Merge server-side preferences/groupType if missing in request
+        let mergedPayload = { ...req.body };
+        if (userId) {
+            try {
+                const u = await User.findById(userId).select('groupType preferences');
+                if (u) {
+                    if (!mergedPayload.group_name && u.groupType) {
+                        mergedPayload.group_name = u.groupType;
+                    }
+                    if (!mergedPayload.preferences && u.preferences) {
+                        mergedPayload.preferences = u.preferences;
+                    }
+                }
+            } catch (e) {
+                console.warn('Unable to merge user profile into analysis payload:', e.message);
+            }
+        }
+
+        // Fetch previous minimal analysis for personalization
+        if (userId) {
+            try {
+                const last = await AnalysisResult.findOne({ userId }).sort({ createdAt: -1 }).lean();
+                if (last) {
+                    mergedPayload.previous_analysis = {
+                        aiCareers: last.aiCareers || [],
+                        pdfCareers: last.pdfCareers || [],
+                        groupName: last.groupName,
+                        createdAt: last.createdAt,
+                    };
+                }
+            } catch (e) {
+                console.warn('Unable to fetch previous analysis:', e.message);
+            }
+        }
+            
         const response = await axios.post(
             `${PYTHON_API_URL}/analyze-answers`, 
-            req.body,
-            { timeout: 25000 }  // Set timeout to 25 seconds
+            mergedPayload,
+            { timeout: 120000 }  // Increase timeout to 120 seconds for AI + PDF processing
         );
         
         console.log('Analysis response received:', response.data);
+        const elapsed = Date.now() - t0;
+
+        // Non-blocking persist minimal result (best-effort)
+        (async () => {
+            try {
+                const ai = Array.isArray(response.data?.ai_generated_careers) ? response.data.ai_generated_careers : [];
+                const pdf = Array.isArray(response.data?.pdf_based_careers) ? response.data.pdf_based_careers : [];
+                const minify = list => list.slice(0, 5).map(c => ({
+                    title: c?.title || c?.name || 'Unknown',
+                    match: typeof c?.match === 'number' ? c.match : undefined,
+                }));
+
+                const finalAnswers = mergedPayload?.final_answers || mergedPayload?.answers || [];
+                const groupName = mergedPayload?.group_name || 'Unknown';
+                const inputHash = crypto.createHash('sha256')
+                    .update(JSON.stringify({ finalAnswers, groupName }))
+                    .digest('hex');
+
+                await AnalysisResult.create({
+                    userId: userId || undefined,
+                    groupName,
+                    answersCount: Array.isArray(finalAnswers) ? finalAnswers.length : 0,
+                    durationMs: elapsed,
+                    aiCareers: minify(ai),
+                    pdfCareers: minify(pdf),
+                    inputHash,
+                });
+            } catch (persistErr) {
+                console.error('Persist minimal analysis failed:', persistErr.message);
+            }
+        })();
+
         res.json(response.data);
     } catch (error) {
         console.error('Error analyzing answers:', {
@@ -230,7 +377,7 @@ app.post('/analyze-answers', async (req, res) => {
         });
         
         const errorMessage = error.code === 'ECONNABORTED'
-            ? 'Analysis request timed out'
+            ? 'Analysis request timed out (backend->Flask, 120s). Try again or simplify inputs.'
             : error.response?.data?.error || error.message;
             
         res.status(500).json({ 
@@ -238,6 +385,23 @@ app.post('/analyze-answers', async (req, res) => {
             details: error.message,
             timestamp: new Date().toISOString()
         });
+    }
+});
+
+// Fetch recent minimal analysis results
+app.get('/analysis-results', async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit || '10', 10), 50);
+        const results = await AnalysisResult.find({},
+            { aiCareers: 1, pdfCareers: 1, groupName: 1, answersCount: 1, durationMs: 1, createdAt: 1 }
+        )
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean();
+        res.json({ results });
+    } catch (err) {
+        console.error('Failed to fetch analysis results:', err.message);
+        res.status(500).json({ error: 'Failed to fetch analysis results' });
     }
 });
 
