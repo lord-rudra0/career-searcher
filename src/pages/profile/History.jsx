@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar, Sparkles, BookOpen } from 'lucide-react';
+import { Calendar, Sparkles, BookOpen, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function History() {
   const { user } = useAuth();
   const [assessmentResults, setAssessmentResults] = useState([]);
+  const [skillGapResults, setSkillGapResults] = useState([]);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -30,6 +31,21 @@ export default function History() {
       setAssessmentResults(storedResults);
     };
     loadHistory();
+  }, [user]);
+
+  useEffect(() => {
+    const loadSkillGaps = async () => {
+      if (!user) return;
+      try {
+        const { results } = await api.getUserSkillGapResults(10);
+        if (Array.isArray(results)) {
+          setSkillGapResults(results);
+        }
+      } catch (e) {
+        // Silent: section will simply not show if none
+      }
+    };
+    loadSkillGaps();
   }, [user]);
 
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', {
@@ -99,6 +115,42 @@ export default function History() {
           </div>
         ))}
       </div>
+
+      {/* Skill Gap Analyses Section */}
+      {skillGapResults.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-2xl md:text-3xl font-bold mb-6 flex items-center">
+            <Target className="w-6 h-6 text-purple-600 mr-2" />
+            My Skill Gap Analyses
+          </h2>
+          <div className="space-y-4">
+            {skillGapResults.map((sg) => (
+              <div key={sg._id} className="bg-gray-50 rounded-xl p-5 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">{new Date(sg.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div className="mt-2 flex items-center space-x-2">
+                    {sg.groupName && (
+                      <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs">{sg.groupName}</span>
+                    )}
+                    <span className="text-sm text-gray-700">
+                      {Array.isArray(sg.careers) ? `${sg.careers.length} careers` : 'No careers'}
+                    </span>
+                  </div>
+                </div>
+                <Link
+                  to={`/skill-gap/${sg._id}`}
+                  className="px-4 py-2 bg-white border rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  View
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
