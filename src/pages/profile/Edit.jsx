@@ -14,7 +14,10 @@ export default function EditProfile() {
     groupType: '',
     preferences: {
       jobLocation: { country: '', state: '', district: '' },
-      studyLocation: { country: '', state: '', district: '' }
+      studyLocation: { country: '', state: '', district: '' },
+      stream: '',
+      targetExam: '',
+      colleges: ['', '', '']
     }
   });
 
@@ -34,7 +37,12 @@ export default function EditProfile() {
             country: user.preferences?.studyLocation?.country || '',
             state: user.preferences?.studyLocation?.state || '',
             district: user.preferences?.studyLocation?.district || ''
-          }
+          },
+          stream: user.preferences?.stream || '',
+          targetExam: user.preferences?.targetExam || '',
+          colleges: Array.isArray(user.preferences?.colleges)
+            ? [...user.preferences.colleges, '', '', ''].slice(0,3)
+            : ['', '', '']
         }
       });
     }
@@ -57,7 +65,13 @@ export default function EditProfile() {
   const saveProfile = async () => {
     setSaving(true);
     try {
-      await api.updateUserProfile(form);
+      await api.updateUserProfile({
+        ...form,
+        preferences: {
+          ...form.preferences,
+          colleges: (form.preferences.colleges || []).map(c => String(c).trim()).filter(Boolean).slice(0,3)
+        }
+      });
       await refreshUser();
       navigate('/profile/overview');
     } catch (e) {
@@ -89,6 +103,30 @@ export default function EditProfile() {
             <option>PostGraduate</option>
           </select>
         </label>
+
+        {/* Academic Preferences */}
+        <div className="pt-2">
+          <h3 className="text-sm font-semibold text-gray-700">Academic Preferences</h3>
+          <div className="grid grid-cols-1 gap-3 mt-2">
+            <input placeholder="Stream (e.g., Science, Commerce, Arts)" value={form.preferences.stream}
+                   onChange={e=>handleChange('preferences.stream', e.target.value)}
+                   className="border rounded-lg px-3 py-2" />
+            <input placeholder="Target Exam (e.g., JEE, NEET, CUET)" value={form.preferences.targetExam}
+                   onChange={e=>handleChange('preferences.targetExam', e.target.value)}
+                   className="border rounded-lg px-3 py-2" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {form.preferences.colleges.map((c, i) => (
+                <input key={i} placeholder={`Preferred College ${i+1}`} value={c}
+                       onChange={e=>{
+                         const next = [...form.preferences.colleges];
+                         next[i] = e.target.value;
+                         handleChange('preferences.colleges', next);
+                       }}
+                       className="border rounded-lg px-3 py-2" />
+              ))}
+            </div>
+          </div>
+        </div>
 
         <div className="pt-2">
           <h3 className="text-sm font-semibold text-gray-700 flex items-center"><MapPin className="w-4 h-4 mr-2"/>Job Location</h3>

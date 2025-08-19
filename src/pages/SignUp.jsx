@@ -26,6 +26,11 @@ const signUpSchema = z.object({
   groupType: z.enum(["Class 9-10", "Class 11-12", "UnderGraduate Student", "PostGraduate"], {
     required_error: "Please select your group type.",
   }),
+  stream: z.string().optional(),
+  targetExam: z.string().optional(),
+  college1: z.string().optional(),
+  college2: z.string().optional(),
+  college3: z.string().optional(),
   jobCountry: z.string().optional(),
   jobState: z.string().optional(),
   jobDistrict: z.string().optional(),
@@ -46,6 +51,11 @@ const SignUp = () => {
       email: "",
       password: "",
       groupType: "Class 11-12",
+      stream: "",
+      targetExam: "",
+      college1: "",
+      college2: "",
+      college3: "",
       jobCountry: "",
       jobState: "",
       jobDistrict: "",
@@ -69,6 +79,12 @@ const SignUp = () => {
           state: values.studyState || undefined,
           district: values.studyDistrict || undefined,
         },
+        stream: values.stream || undefined,
+        targetExam: values.targetExam || undefined,
+        colleges: [values.college1, values.college2, values.college3]
+          .map(v => (v || '').trim())
+          .filter(Boolean)
+          .slice(0,3),
       };
       await signup(values.username, values.email, values.password, values.groupType, preferences);
       toast.success("Account created successfully!");
@@ -156,6 +172,56 @@ const SignUp = () => {
                     </FormItem>
                   )}
                 />
+
+                {/* Academic Preferences */}
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Academic Preferences (optional)</h3>
+                  <div className="grid grid-cols-1 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="stream"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Stream</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Science, Commerce, Arts" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="targetExam"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Target Exam</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., JEE, NEET, CUET" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {['college1','college2','college3'].map((name, idx) => (
+                        <FormField key={name}
+                          control={form.control}
+                          name={name}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Preferred College {idx+1}</FormLabel>
+                              <FormControl>
+                                <Input placeholder={`College ${idx+1}`} {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
                 <div>
                   <h3 className="text-sm font-semibold mb-2">Job Location (optional)</h3>

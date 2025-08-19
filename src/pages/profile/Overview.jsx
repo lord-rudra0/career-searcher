@@ -13,7 +13,7 @@ export default function Overview() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-4 rounded-lg bg-gray-50">
             <div className="flex items-center text-gray-700"><UserIcon className="w-4 h-4 mr-2"/>Name</div>
-            <div className="mt-1 text-lg font-semibold">{user?.name || '-'}</div>
+            <div className="mt-1 text-lg font-semibold">{user?.username || user?.name || '-'}</div>
           </div>
           <div className="p-4 rounded-lg bg-gray-50">
             <div className="flex items-center text-gray-700"><Mail className="w-4 h-4 mr-2"/>Email</div>
@@ -22,6 +22,32 @@ export default function Overview() {
           <div className="p-4 rounded-lg bg-gray-50">
             <div className="text-gray-700">Group Type</div>
             <div className="mt-1 text-lg font-semibold">{user?.groupType || '-'}</div>
+          </div>
+        </div>
+
+        {/* Academic Preferences */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-4 rounded-lg bg-gray-50">
+            <div className="text-gray-700">Stream</div>
+            <div className="mt-1 text-lg font-semibold">{user?.preferences?.stream || '-'}</div>
+          </div>
+          <div className="p-4 rounded-lg bg-gray-50">
+            <div className="text-gray-700">Target Exam</div>
+            <div className="mt-1 text-lg font-semibold">{user?.preferences?.targetExam || '-'}</div>
+          </div>
+          <div className="p-4 rounded-lg bg-gray-50 md:col-span-2">
+            <div className="text-gray-700">Preferred Colleges</div>
+            <div className="mt-2 text-sm">
+              {(user?.preferences?.colleges && user.preferences.colleges.length > 0) ? (
+                <div className="flex flex-wrap gap-2">
+                  {user.preferences.colleges.slice(0,3).map((c, idx) => (
+                    <span key={idx} className="px-2 py-1 bg-white border rounded-md">{c}</span>
+                  ))}
+                </div>
+              ) : (
+                <span className="font-medium">-</span>
+              )}
+            </div>
           </div>
         </div>
 
