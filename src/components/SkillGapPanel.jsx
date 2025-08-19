@@ -25,36 +25,67 @@ const Section = ({ title, icon: Icon, children }) => (
   </div>
 );
 
-const SkillList = ({ title, items = [], type = 'default' }) => (
+const SkillList = ({ title, items = [], type = 'default', enableToggle = false, completed = [], onToggle }) => (
   <div className="mb-3">
     <div className="text-sm font-medium text-gray-700 mb-2">{title}</div>
     <div>
-      {(items || []).slice(0, 20).map((s, i) => (
-        <Pill key={`${title}-${i}`} type={type}>{s}</Pill>
-      ))}
+      {(items || []).slice(0, 50).map((s, i) => {
+        const checked = completed.includes(s);
+        if (!enableToggle) {
+          return (
+            <Pill key={`${title}-${i}`} type={type}>{s}</Pill>
+          );
+        }
+        return (
+          <label
+            key={`${title}-${i}`}
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs mr-2 mb-2 border ${checked ? 'bg-green-50 border-green-300 text-green-700' : 'bg-red-50 border-red-300 text-red-700'}`}
+          >
+            <input
+              type="checkbox"
+              className="mr-1"
+              checked={checked}
+              onChange={(e) => onToggle?.('skill', s, e.target.checked)}
+            />
+            {s}
+          </label>
+        );
+      })}
       {!items?.length && <div className="text-xs text-gray-500">No items</div>}
     </div>
   </div>
 );
 
-const LinkList = ({ items = [] }) => (
+const LinkList = ({ items = [], completed = [], onToggle }) => (
   <ul className="list-disc list-inside space-y-2">
-    {(items || []).slice(0, 8).map((c, i) => (
-      <li key={i} className="text-sm text-gray-700">
-        {c.title || c.name}
-        {c.provider ? ` — ${c.provider}` : ''}
-        {c.platform ? ` — ${c.platform}` : ''}
-        {c.link && (
-          <a href={c.link} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline ml-1">
-            Visit
-          </a>
-        )}
-      </li>
-    ))}
+    {(items || []).slice(0, 20).map((c, i) => {
+      const label = c.title || c.name || c.link || `course-${i}`;
+      const checked = completed.includes(label);
+      return (
+        <li key={i} className="text-sm text-gray-700 flex items-center">
+          <input
+            type="checkbox"
+            className="mr-2"
+            checked={checked}
+            onChange={(e) => onToggle?.('course', label, e.target.checked)}
+          />
+          <span className={checked ? 'line-through text-gray-500' : ''}>
+            {c.title || c.name}
+            {c.provider ? ` — ${c.provider}` : ''}
+            {c.platform ? ` — ${c.platform}` : ''}
+          </span>
+          {c.link && (
+            <a href={c.link} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline ml-2">
+              Visit
+            </a>
+          )}
+        </li>
+      );
+    })}
   </ul>
 );
 
-export default function SkillGapPanel({ data }) {
+export default function SkillGapPanel({ data, completedSkills = [], completedCourses = [], onToggle }) {
   if (!data) return null;
   const { userSkills = {}, careers = [] } = data;
 
@@ -97,13 +128,27 @@ export default function SkillGapPanel({ data }) {
 
           <Section title="Skill Gaps">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SkillList title="Missing" items={c.gaps?.missing} type="missing" />
-              <SkillList title="To Strengthen" items={c.gaps?.toStrengthen} type="strengthen" />
+              <SkillList
+                title="Missing"
+                items={c.gaps?.missing}
+                type="missing"
+                enableToggle
+                completed={completedSkills}
+                onToggle={onToggle}
+              />
+              <SkillList
+                title="To Strengthen"
+                items={c.gaps?.toStrengthen}
+                type="strengthen"
+                enableToggle
+                completed={completedSkills}
+                onToggle={onToggle}
+              />
             </div>
           </Section>
 
           <Section title="Recommended Courses" icon={BookOpen}>
-            <LinkList items={c.recommendations?.courses} />
+            <LinkList items={c.recommendations?.courses} completed={completedCourses} onToggle={onToggle} />
           </Section>
 
           <Section title="Recommended Projects">

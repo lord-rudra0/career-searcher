@@ -141,6 +141,12 @@ const api = {
         return res.data;
     },
 
+    // Update completion state for a skill or course on a specific result
+    updateSkillGapProgress: async (id, { type, item, completed }) => {
+        const res = await axiosInstance.put(`/skill-gap-results/${id}/progress`, { type, item, completed });
+        return res.data; // { ok, completedSkills, completedCourses }
+    },
+
     analyzeAnswers: async (answers, groupName, preferences, options = {}) => {
         const { retries = 2, backoffMs = 2000, signal, timeoutMs } = options;
         let attempt = 0;

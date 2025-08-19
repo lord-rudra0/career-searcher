@@ -317,6 +317,41 @@ app.delete('/skill-gap-results/:id', verifyToken, async (req, res) => {
     }
 });
 
+// Update completion progress (skills/courses) for a skill gap result
+// Body: { type: 'skill' | 'course', item: string, completed: boolean }
+app.put('/skill-gap-results/:id/progress', verifyToken, async (req, res) => {
+    try {
+        const { type, item, completed } = req.body || {};
+        if (!type || !item || typeof completed !== 'boolean') {
+            return res.status(400).json({ error: 'type, item and completed are required' });
+        }
+
+        const doc = await SkillGapResult.findById(req.params.id);
+        if (!doc) return res.status(404).json({ error: 'Not found' });
+        if (!doc.userId || String(doc.userId) !== String(req.user.id)) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
+        const field = type === 'course' ? 'completedCourses' : 'completedSkills';
+
+        if (completed) {
+            if (!doc[field].includes(item)) doc[field].push(item);
+        } else {
+            doc[field] = doc[field].filter(v => v !== item);
+        }
+        await doc.save();
+
+        res.json({
+            ok: true,
+            completedSkills: doc.completedSkills,
+            completedCourses: doc.completedCourses,
+        });
+    } catch (err) {
+        console.error('Failed to update progress:', err.message);
+        res.status(500).json({ error: 'Failed to update progress' });
+    }
+});
+
 // Update user profile (username, email, groupType, preferences)
 app.put('/user/profile', verifyToken, async (req, res) => {
     try {

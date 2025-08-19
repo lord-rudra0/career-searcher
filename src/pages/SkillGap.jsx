@@ -10,6 +10,8 @@ const SkillGapPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
+  const [completedSkills, setCompletedSkills] = useState([]);
+  const [completedCourses, setCompletedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -20,7 +22,9 @@ const SkillGapPage = () => {
       try {
         if (id) {
           const doc = await api.getSkillGapResultById(id);
-          setData({ userSkills: doc.userSkills, careers: doc.careers });
+          setData({ id: doc._id, userSkills: doc.userSkills, careers: doc.careers });
+          setCompletedSkills(Array.isArray(doc.completedSkills) ? doc.completedSkills : []);
+          setCompletedCourses(Array.isArray(doc.completedCourses) ? doc.completedCourses : []);
         } else {
           // No id: load latest for user
           const res = await api.getUserSkillGapResults(1);
@@ -28,7 +32,9 @@ const SkillGapPage = () => {
           if (!latest) {
             setError('No saved skill gap results found.');
           } else {
-            setData({ userSkills: latest.userSkills, careers: latest.careers });
+            setData({ id: latest._id, userSkills: latest.userSkills, careers: latest.careers });
+            setCompletedSkills(Array.isArray(latest.completedSkills) ? latest.completedSkills : []);
+            setCompletedCourses(Array.isArray(latest.completedCourses) ? latest.completedCourses : []);
             // normalize route to include id for shareable URL
             navigate(`/skill-gap/${latest._id}`, { replace: true });
           }
@@ -41,6 +47,17 @@ const SkillGapPage = () => {
     };
     load();
   }, [id, navigate]);
+
+  const handleToggle = async (type, item, nextCompleted) => {
+    if (!data?.id) return;
+    try {
+      const res = await api.updateSkillGapProgress(data.id, { type, item, completed: nextCompleted });
+      setCompletedSkills(res.completedSkills || []);
+      setCompletedCourses(res.completedCourses || []);
+    } catch (e) {
+      console.error('Failed to update progress', e);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
@@ -56,7 +73,12 @@ const SkillGapPage = () => {
         )}
         {data && (
           <div className="mt-4">
-            <SkillGapPanel data={data} />
+            <SkillGapPanel
+              data={data}
+              completedSkills={completedSkills}
+              completedCourses={completedCourses}
+              onToggle={handleToggle}
+            />
           </div>
         )}
       </main>

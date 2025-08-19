@@ -17,6 +17,9 @@ const SkillGapResultSchema = new mongoose.Schema({
   targetCareers: { type: [String], default: [] },
   userSkills: { type: mongoose.Schema.Types.Mixed },
   careers: { type: [SkillGapCareerSchema], default: [] },
+  // Track user progress: which skills and courses have been completed
+  completedSkills: { type: [String], default: [] },
+  completedCourses: { type: [String], default: [] },
   inputHash: { type: String, index: true },
 }, { timestamps: true });
 
