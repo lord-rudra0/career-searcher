@@ -73,6 +73,67 @@ export default function Dashboard() {
     return Math.round((filled / fields.length) * 100);
   }, [user]);
 
+  // --- Personalized Journey helpers ---
+  const getClassAndStream = () => {
+    const prefs = user?.preferences || {};
+    const rawClass = prefs.class || prefs.grade || prefs.standard || prefs.year || prefs.educationLevel || user?.groupType;
+    const stream = (prefs.stream || prefs.group || prefs.track || '').toString().toLowerCase();
+    // Normalize class to number if possible
+    let cls = 0;
+    if (typeof rawClass === 'number') cls = rawClass;
+    else if (typeof rawClass === 'string') {
+      const m = rawClass.match(/(9|10|11|12|fy|sy|ty|first|second|third)/i);
+      if (m) {
+        const t = m[0].toLowerCase();
+        if (['9','10','11','12'].includes(t)) cls = parseInt(t, 10);
+        else if (['fy','first'].includes(t)) cls = 13; // college first year
+        else if (['sy','second'].includes(t)) cls = 14;
+        else if (['ty','third'].includes(t)) cls = 15;
+      }
+    }
+    return { cls, stream };
+  };
+
+  const buildJourney = ({ cls, stream }) => {
+    const steps = [];
+    const lower = stream;
+
+    const add = (title, desc, to, badge) => steps.push({ title, desc, to, badge });
+
+    if (cls === 9 || cls === 10) {
+      add('Explore Streams (XI)', 'Understand Science, Commerce, and Humanities with outcomes.', '/test', 'Start here');
+      add('Discover Your Interests', 'Take the Career Test to map interests to subjects.', '/test', 'Assessment');
+      add('Skill Foundations', 'Identify subject-wise gaps early and plan improvements.', '/skill-gap', 'Skill Gap');
+      add('Build a Study Plan', 'Create weekly targets for Class 10 boards.', '/profile/overview', 'Planning');
+    } else if (cls === 11 || cls === 12) {
+      if (lower.includes('sci') || lower.includes('pcm') || lower.includes('pcb')) {
+        add('Target JEE/NEET', 'Pick your exam track and review syllabus + weightage.', '/test', 'Roadmap');
+        add('Skill Gap on Core', 'Run skill gap for Physics, Chemistry, Math/Bio topics.', '/skill-gap', 'Analyze');
+        add('Mock Practice', 'Schedule topic-wise mocks and analyze errors.', '/test/questions', 'Practice');
+        add('College Shortlist', 'Shortlist colleges based on target rank and preferences.', '/profile/history', 'Shortlist');
+      } else if (lower.includes('com')) {
+        add('Commerce Pathways', 'Explore CA/CS/CMA vs B.Com specializations.', '/test', 'Explore');
+        add('Subject Gaps', 'Audit Accountancy, Economics, Business Studies gaps.', '/skill-gap', 'Analyze');
+        add('Aptitude Prep', 'Start aptitude + reasoning practice for entrances.', '/test/questions', 'Practice');
+        add('Course Shortlist', 'Shortlist colleges and entrance timelines (CUET, etc.)', '/profile/history', 'Shortlist');
+      } else {
+        add('Humanities Tracks', 'Explore Psychology, Law, Design, UPSC-foundation etc.', '/test', 'Explore');
+        add('Portfolio/Reading', 'Start portfolio and curated reading list per interest.', '/profile/overview', 'Build');
+        add('Skill Audit', 'Run gap analysis on writing, GK, reasoning, communication.', '/skill-gap', 'Analyze');
+        add('College Pathways', 'Plan CUET/college applications with deadlines.', '/profile/history', 'Plan');
+      }
+    } else if (cls >= 13) {
+      add('Career Targeting', 'Refine goals with the Career Test and industry paths.', '/test', 'Assess');
+      add('Skill Gap to Role', 'Benchmark current skills to target roles.', '/skill-gap', 'Analyze');
+      add('Projects & Internships', 'Plan 1-2 projects and internships this term.', '/profile/overview', 'Execute');
+      add('Applications', 'Track applications, exams, and interviews.', '/profile/history', 'Track');
+    }
+    return steps;
+  };
+
+  const { cls, stream } = getClassAndStream();
+  const journeySteps = useMemo(() => buildJourney({ cls, stream }), [cls, stream]);
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
       <Navbar />
@@ -116,6 +177,37 @@ export default function Dashboard() {
             <StatCard title="Next Steps" value={<span className="text-indigo-600">Ready</span>} icon={CheckCircle2} footer="Pick an action below" />
           </div>
         )}
+
+        {/* Personalized Journey section */}
+        <div className="mt-10 bg-white rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Personalized Journey</h2>
+            <div className="text-xs text-gray-500">
+              {cls ? `Class: ${cls}` : 'Class: -'}
+              {typeof stream === 'string' && stream ? ` • Stream: ${stream}` : ''}
+            </div>
+          </div>
+          {journeySteps.length ? (
+            <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {journeySteps.map((s, i) => (
+                <Link key={i} to={s.to} className="block p-5 rounded-xl border hover:shadow-md transition">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">{s.title}</p>
+                    {s.badge && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">{s.badge}</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">{s.desc}</p>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 p-5 rounded-xl border bg-slate-50 text-sm text-gray-600">
+              We couldn’t detect your class/stream. Complete your profile to get a tailored roadmap.
+              <Link to="/profile/edit" className="ml-2 text-indigo-600 hover:underline">Complete Profile</Link>
+            </div>
+          )}
+        </div>
 
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm">
