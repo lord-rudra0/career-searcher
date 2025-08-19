@@ -24,7 +24,7 @@ import LoadingSpinner from './LoadingSpinner';
 // import ChatBot from './ChatBot'
 import Navbar from './Navbar';
 import Footer from './Footer';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import SkillGapPanel from './SkillGapPanel';
 
 function App() {
@@ -54,6 +54,7 @@ function App() {
   const controllerRef = useRef(null);
   const timerRef = useRef(null);
   const [lastFinalAnswers, setLastFinalAnswers] = useState([]);
+  const navigate = useNavigate();
 
   // Map stored groupType to option id used by questions.json
   const groupTypeToOption = (groupType) => {
@@ -105,6 +106,10 @@ function App() {
         timeoutMs: 130000,
       });
       setSkillGapData(data);
+      if (data?.savedId) {
+        // Navigate to dedicated page to view the saved analysis
+        navigate(`/skill-gap/${data.savedId}`);
+      }
     } catch (err) {
       setSkillGapError(err.message || 'Failed to generate skill gap analysis');
     } finally {
@@ -763,6 +768,38 @@ function App() {
 
         {careerResults && (
           <>
+            {/* Top bar action: prominent Skill Gap Analysis button */}
+            <div className="max-w-5xl mx-auto mb-6 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Award className="w-8 h-8 text-yellow-400" />
+                <h2 className="text-2xl font-bold">Your Career Results</h2>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleSkillGapAnalysis}
+                  disabled={isSkillGapLoading}
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg shadow hover:shadow-md transition disabled:opacity-60"
+                >
+                  {isSkillGapLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Target className="w-4 h-4 mr-2" />
+                      Skill Gap Analysis
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={() => navigate('/skill-gap')}
+                  className="inline-flex items-center px-3 py-2 bg-white text-gray-700 rounded-lg border hover:bg-gray-50"
+                >
+                  View Saved
+                </button>
+              </div>
+            </div>
             <CareerSection 
               title="AI-Generated Career Recommendations" 
               careers={careerResults} 

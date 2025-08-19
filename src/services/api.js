@@ -90,7 +90,7 @@ const api = {
                 if (!response.data) {
                     throw new Error('No data received from server');
                 }
-                return response.data;
+                return response.data; // may include savedId
             } catch (error) {
                 if (axios.isCancel?.(error) || error.name === 'CanceledError') {
                     throw error;
@@ -121,6 +121,18 @@ const api = {
                 );
             }
         }
+    },
+
+    // Fetch saved skill gap results for current user (requires auth)
+    getUserSkillGapResults: async (limit = 10) => {
+        const res = await axiosInstance.get('/user/skill-gap-results', { params: { limit } });
+        return res.data;
+    },
+
+    // Fetch a specific saved skill gap result by id
+    getSkillGapResultById: async (id) => {
+        const res = await axiosInstance.get(`/skill-gap-results/${id}`);
+        return res.data;
     },
 
     analyzeAnswers: async (answers, groupName, preferences, options = {}) => {

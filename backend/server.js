@@ -9,6 +9,7 @@ const session = require('express-session');
 const LocalStrategy = require("passport-local").Strategy;
 const User = require("./models/User.js");
 const AnalysisResult = require('./models/AnalysisResult.js');
+const SkillGapResult = require('./models/SkillGapResult.js');
 const dotenv = require('dotenv');
 // const cors = require('cors');
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
@@ -80,11 +81,12 @@ app.post('/skill-gap-analysis', async (req, res) => {
         const t0 = Date.now();
         // Merge auth user's stored preferences/groupType if missing (optional)
         let merged = { ...req.body };
+        let userId = undefined;
         try {
             const token = req.header('x-auth-token');
             if (token) {
                 const decoded = jwt.verify(token, JWT_SECRET);
-                const userId = decoded?.id;
+                userId = decoded?.id;
                 if (userId) {
                     const u = await User.findById(userId).select('groupType preferences');
                     if (u) {
@@ -104,7 +106,32 @@ app.post('/skill-gap-analysis', async (req, res) => {
         );
         const elapsed = Date.now() - t0;
         console.log('Skill gap response in', elapsed, 'ms');
-        res.json(response.data);
+        // Persist minimal skill gap result for later retrieval
+        try {
+            const aiData = response.data || {};
+            const userSkills = aiData.userSkills || {};
+            const careers = Array.isArray(aiData.careers) ? aiData.careers : [];
+            const finalAnswers = merged?.final_answers || merged?.answers || [];
+            const groupName = merged?.group_name || 'Unknown';
+            const inputHash = crypto.createHash('sha256')
+                .update(JSON.stringify({ finalAnswers, groupName }))
+                .digest('hex');
+
+            const doc = await SkillGapResult.create({
+                userId: userId || undefined,
+                groupName,
+                preferences: merged?.preferences || {},
+                targetCareers: merged?.target_careers || [],
+                userSkills,
+                careers,
+                inputHash,
+            });
+            res.json({ savedId: doc._id, ...aiData });
+        } catch (persistErr) {
+            console.error('Persist skill gap result failed:', persistErr.message);
+            // Return AI data even if persistence fails
+            res.json(response.data);
+        }
     } catch (error) {
         console.error('Error in skill gap analysis:', {
             message: error.message,
@@ -147,7 +174,30 @@ app.post('/api/skill-gap-analysis', async (req, res) => {
         );
         const elapsed = Date.now() - t0;
         console.log('Skill gap (alias) response in', elapsed, 'ms');
-        res.json(response.data);
+        try {
+            const aiData = response.data || {};
+            const userSkills = aiData.userSkills || {};
+            const careers = Array.isArray(aiData.careers) ? aiData.careers : [];
+            const finalAnswers = merged?.final_answers || merged?.answers || [];
+            const groupName = merged?.group_name || 'Unknown';
+            const inputHash = crypto.createHash('sha256')
+                .update(JSON.stringify({ finalAnswers, groupName }))
+                .digest('hex');
+
+            const doc = await SkillGapResult.create({
+                userId: undefined,
+                groupName,
+                preferences: merged?.preferences || {},
+                targetCareers: merged?.target_careers || [],
+                userSkills,
+                careers,
+                inputHash,
+            });
+            res.json({ savedId: doc._id, ...aiData });
+        } catch (persistErr) {
+            console.error('Persist skill gap result failed (alias):', persistErr.message);
+            res.json(response.data);
+        }
     } catch (error) {
         console.error('Error in skill gap analysis (alias):', {
             message: error.message,
@@ -158,6 +208,32 @@ app.post('/api/skill-gap-analysis', async (req, res) => {
             ? 'Skill gap request timed out (backend->Flask, 120s). Try again.'
             : error.response?.data?.error || error.message;
         res.status(500).json({ error: errorMessage, details: error.message, timestamp: new Date().toISOString() });
+    }
+});
+
+// Retrieve current user's saved skill gap results (requires auth)
+app.get('/user/skill-gap-results', verifyToken, async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit || '10', 10), 50);
+        const results = await SkillGapResult.find({ userId: req.user.id })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+        res.json({ results });
+    } catch (err) {
+        console.error('Failed to fetch user skill gap results:', err.message);
+        res.status(500).json({ error: 'Failed to fetch user skill gap results' });
+    }
+});
+
+// Retrieve a single skill gap result by id (public if you know the id)
+app.get('/skill-gap-results/:id', async (req, res) => {
+    try {
+        const doc = await SkillGapResult.findById(req.params.id).lean();
+        if (!doc) return res.status(404).json({ error: 'Not found' });
+        res.json(doc);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch skill gap result' });
     }
 });
 
