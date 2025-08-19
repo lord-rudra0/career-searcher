@@ -3,10 +3,18 @@ import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import HowItWorks from '@/components/HowItWorks';
 import CareerCards from '@/components/CareerCards';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 const Index = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
   useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
     // Intersection Observer for fade-in elements
     const observerOptions = {
       root: null,
@@ -30,7 +38,7 @@ const Index = () => {
     return () => {
       fadeInObserver.disconnect();
     };
-  }, []);
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="min-h-screen">

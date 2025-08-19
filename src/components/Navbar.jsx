@@ -38,18 +38,22 @@ const Navbar = () => {
         </Link>
         
         <nav className="hidden md:flex items-center space-x-8">
-          <Link 
-            to="/" 
-            className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
-          >
-            Home
-          </Link>
-          <Link 
-            to="/test" 
-            className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
-          >
-            Take Test
-          </Link>
+          {!isAuthenticated && (
+            <Link 
+              to="/" 
+              className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
+            >
+              Home
+            </Link>
+          )}
+          {!isAuthenticated && (
+            <Link 
+              to="/test" 
+              className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
+            >
+              Take Test
+            </Link>
+          )}
           {isAuthenticated && (
             <>
               <Link
@@ -63,6 +67,12 @@ const Navbar = () => {
                 className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
               >
                 Skill Gap List
+              </Link>
+              <Link 
+                to="/test" 
+                className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
+              >
+                Take Test
               </Link>
             </>
           )}
