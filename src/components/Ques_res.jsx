@@ -272,6 +272,10 @@ function App() {
           if (!success) {
             throw new Error('Failed to generate next question. Please try again.');
           }
+          // Move to the newly generated AI question immediately
+          setCurrentQuestionIndex(prev => prev + 1);
+          setCurrentAnswer('');
+          return; // avoid running the below navigation logic in the same tick
         } else {
           console.log('\nMaximum AI questions reached, proceeding to analysis');
           handleFinish(updatedAnswers);
