@@ -237,6 +237,22 @@ app.get('/skill-gap-results/:id', async (req, res) => {
     }
 });
 
+// Delete a skill gap result (must be owner)
+app.delete('/skill-gap-results/:id', verifyToken, async (req, res) => {
+    try {
+        const doc = await SkillGapResult.findById(req.params.id);
+        if (!doc) return res.status(404).json({ error: 'Not found' });
+        if (!doc.userId || String(doc.userId) !== String(req.user.id)) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        await SkillGapResult.deleteOne({ _id: doc._id });
+        res.json({ ok: true });
+    } catch (err) {
+        console.error('Failed to delete skill gap result:', err.message);
+        res.status(500).json({ error: 'Failed to delete skill gap result' });
+    }
+});
+
 // Update user profile (username, email, groupType, preferences)
 app.put('/user/profile', verifyToken, async (req, res) => {
     try {

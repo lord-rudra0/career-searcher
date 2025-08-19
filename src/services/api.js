@@ -135,6 +135,12 @@ const api = {
         return res.data;
     },
 
+    // Delete a saved skill gap result (auth required)
+    deleteSkillGapResult: async (id) => {
+        const res = await axiosInstance.delete(`/skill-gap-results/${id}`);
+        return res.data;
+    },
+
     analyzeAnswers: async (answers, groupName, preferences, options = {}) => {
         const { retries = 2, backoffMs = 2000, signal, timeoutMs } = options;
         let attempt = 0;
