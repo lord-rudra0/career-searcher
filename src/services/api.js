@@ -66,6 +66,63 @@ const api = {
         }
     },
 
+    // New: Skill Gap Analysis
+    skillGapAnalysis: async (payload, options = {}) => {
+        const { retries = 2, backoffMs = 2000, signal, timeoutMs } = options;
+        let attempt = 0;
+
+        const isRetryable = (error) => {
+            const status = error.response?.status;
+            return (
+                error.code === 'ECONNABORTED' || // timeout
+                !status || // network error
+                (status >= 500 && status < 600)
+            );
+        };
+
+        while (true) {
+            try {
+                const response = await axiosInstance.post('/skill-gap-analysis', payload, {
+                    signal,
+                    timeout: timeoutMs || axiosInstance.defaults.timeout,
+                });
+
+                if (!response.data) {
+                    throw new Error('No data received from server');
+                }
+                return response.data;
+            } catch (error) {
+                if (axios.isCancel?.(error) || error.name === 'CanceledError') {
+                    throw error;
+                }
+
+                console.error('Skill gap error details:', {
+                    message: error.message,
+                    code: error.code,
+                    status: error.response?.status,
+                    response: error.response?.data
+                });
+
+                if (attempt < retries && isRetryable(error)) {
+                    attempt += 1;
+                    const delay = backoffMs * Math.pow(2, attempt - 1);
+                    await new Promise(res => setTimeout(res, delay));
+                    continue;
+                }
+
+                if (error.code === 'ECONNABORTED') {
+                    throw new Error('Skill gap request timed out. Please try again.');
+                }
+
+                throw new Error(
+                    error.response?.data?.error ||
+                    error.response?.data?.details ||
+                    'Failed to generate skill gap analysis'
+                );
+            }
+        }
+    },
+
     analyzeAnswers: async (answers, groupName, preferences, options = {}) => {
         const { retries = 2, backoffMs = 2000, signal, timeoutMs } = options;
         let attempt = 0;

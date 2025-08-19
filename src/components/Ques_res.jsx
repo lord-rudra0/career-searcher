@@ -25,6 +25,7 @@ import LoadingSpinner from './LoadingSpinner';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { useSearchParams } from 'react-router-dom';
+import SkillGapPanel from './SkillGapPanel';
 
 function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -42,6 +43,9 @@ function App() {
   const [webCareerResults, setWebCareerResults] = useState(null);
   const [isWebSearching, setIsWebSearching] = useState(false);
   const [pdfCareerResults, setPdfCareerResults] = useState(null);
+  const [skillGapData, setSkillGapData] = useState(null);
+  const [isSkillGapLoading, setIsSkillGapLoading] = useState(false);
+  const [skillGapError, setSkillGapError] = useState(null);
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [groupName, setGroupName] = useState(null);
@@ -49,6 +53,7 @@ function App() {
   const [elapsedSec, setElapsedSec] = useState(0);
   const controllerRef = useRef(null);
   const timerRef = useRef(null);
+  const [lastFinalAnswers, setLastFinalAnswers] = useState([]);
 
   // Map stored groupType to option id used by questions.json
   const groupTypeToOption = (groupType) => {
@@ -68,6 +73,43 @@ function App() {
       case 'Post Graduate':
       case 'PG': return 4;
       default: return null;
+    }
+  };
+
+  const handleSkillGapAnalysis = async () => {
+    if (!lastFinalAnswers?.length) {
+      setSkillGapError('Missing answers context to run skill gap analysis.');
+      return;
+    }
+    setSkillGapError(null);
+    setIsSkillGapLoading(true);
+    setSkillGapData(null);
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    try {
+      const targetCareers = Array.isArray(careerResults)
+        ? careerResults.slice(0, 3).map(c => c.title).filter(Boolean)
+        : [];
+
+      const payload = {
+        final_answers: lastFinalAnswers,
+        group_name: groupName,
+        preferences: user?.preferences,
+        target_careers: targetCareers,
+      };
+
+      const data = await api.skillGapAnalysis(payload, {
+        retries: 1,
+        backoffMs: 1500,
+        signal: controller.signal,
+        timeoutMs: 130000,
+      });
+      setSkillGapData(data);
+    } catch (err) {
+      setSkillGapError(err.message || 'Failed to generate skill gap analysis');
+    } finally {
+      setIsSkillGapLoading(false);
+      controllerRef.current = null;
     }
   };
 
@@ -283,6 +325,7 @@ function App() {
       
       setCareerResults(response.ai_generated_careers);
       setPdfCareerResults(response.pdf_based_careers);
+      setLastFinalAnswers(finalAnswers);
 
       // Store results in localStorage
       const resultData = {
@@ -580,7 +623,41 @@ function App() {
                 />
               )}
 
-              
+              {/* Skill Gap Analysis Trigger and Panel */}
+              <div className="max-w-3xl mx-auto mt-6">
+                {skillGapError && (
+                  <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 mb-4 rounded">
+                    {skillGapError}
+                  </div>
+                )}
+                <button
+                  onClick={handleSkillGapAnalysis}
+                  disabled={isSkillGapLoading}
+                  className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl shadow hover:shadow-md transition disabled:opacity-60"
+                >
+                  {isSkillGapLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Generating Skill Gap Analysis...
+                    </>
+                  ) : (
+                    <>
+                      <Target className="w-5 h-5 mr-2" />
+                      Generate Personalized Skill Gap Analysis
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {isSkillGapLoading && (
+                <div className="text-center text-gray-600 mt-4">This can take ~1-2 minutes...</div>
+              )}
+
+              {skillGapData && (
+                <div className="mt-8">
+                  <SkillGapPanel data={skillGapData} />
+                </div>
+              )}
             </>
           )}
         </main>

@@ -74,6 +74,93 @@ app.get('/user/analysis-results', verifyToken, async (req, res) => {
     }
 });
 
+// Proxy: Skill Gap Analysis -> Flask
+app.post('/skill-gap-analysis', async (req, res) => {
+    try {
+        const t0 = Date.now();
+        // Merge auth user's stored preferences/groupType if missing (optional)
+        let merged = { ...req.body };
+        try {
+            const token = req.header('x-auth-token');
+            if (token) {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                const userId = decoded?.id;
+                if (userId) {
+                    const u = await User.findById(userId).select('groupType preferences');
+                    if (u) {
+                        if (!merged.group_name && u.groupType) merged.group_name = u.groupType;
+                        if (!merged.preferences && u.preferences) merged.preferences = u.preferences;
+                    }
+                }
+            }
+        } catch (e) {
+            // non-fatal
+        }
+
+        const response = await axios.post(
+            `${PYTHON_API_URL}/skill-gap`,
+            merged,
+            { timeout: 120000 }
+        );
+        const elapsed = Date.now() - t0;
+        console.log('Skill gap response in', elapsed, 'ms');
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error in skill gap analysis:', {
+            message: error.message,
+            code: error.code,
+            response: error.response?.data
+        });
+        const errorMessage = error.code === 'ECONNABORTED'
+            ? 'Skill gap request timed out (backend->Flask, 120s). Try again.'
+            : error.response?.data?.error || error.message;
+        res.status(500).json({ error: errorMessage, details: error.message, timestamp: new Date().toISOString() });
+    }
+});
+
+// Alias: also support /api/skill-gap-analysis for clients that prefix with /api
+app.post('/api/skill-gap-analysis', async (req, res) => {
+    try {
+        const t0 = Date.now();
+        let merged = { ...req.body };
+        try {
+            const token = req.header('x-auth-token');
+            if (token) {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                const userId = decoded?.id;
+                if (userId) {
+                    const u = await User.findById(userId).select('groupType preferences');
+                    if (u) {
+                        if (!merged.group_name && u.groupType) merged.group_name = u.groupType;
+                        if (!merged.preferences && u.preferences) merged.preferences = u.preferences;
+                    }
+                }
+            }
+        } catch (e) {
+            // non-fatal
+        }
+
+        const response = await axios.post(
+            `${PYTHON_API_URL}/skill-gap`,
+            merged,
+            { timeout: 120000 }
+        );
+        const elapsed = Date.now() - t0;
+        console.log('Skill gap (alias) response in', elapsed, 'ms');
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error in skill gap analysis (alias):', {
+            message: error.message,
+            code: error.code,
+            response: error.response?.data
+        });
+        const errorMessage = error.code === 'ECONNABORTED'
+            ? 'Skill gap request timed out (backend->Flask, 120s). Try again.'
+            : error.response?.data?.error || error.message;
+        res.status(500).json({ error: errorMessage, details: error.message, timestamp: new Date().toISOString() });
+    }
+});
+
 // Update user profile (username, email, groupType, preferences)
 app.put('/user/profile', verifyToken, async (req, res) => {
     try {

@@ -592,6 +592,111 @@ def clean_text(text, max_length):
         text = text[:max_length] + "..."
     return text
 
+@app.route('/skill-gap', methods=['POST'])
+def skill_gap():
+    try:
+        data = request.json or {}
+        all_answers = data.get('final_answers') or data.get('answers') or []
+        group_name = data.get('group_name') or data.get('group_type') or data.get('groupType') or 'General'
+        target_careers = data.get('target_careers') or data.get('careers') or []
+        preferences = data.get('preferences', {}) or {}
+        job_loc = preferences.get('jobLocation', {}) or {}
+        study_loc = preferences.get('studyLocation', {}) or {}
+
+        # Compact answers to reduce token size
+        try:
+            compact_answers = [
+                {
+                    'q': (qa.get('question') or '')[:140],
+                    'a': (qa.get('answer') or '')[:200]
+                }
+                for qa in (all_answers if isinstance(all_answers, list) else [])
+            ][:25]
+        except Exception:
+            compact_answers = []
+
+        loc_context = f"""
+        Personalization context:
+        - Group: {group_name}
+        - Job location preference: country={job_loc.get('country')}, state={job_loc.get('state')}, district={job_loc.get('district')}
+        - Study location preference: country={study_loc.get('country')}, state={study_loc.get('state')}, district={study_loc.get('district')}
+        Only apply location constraints if present.
+        """
+
+        careers_hint = (
+            f"Target careers to analyze: {json.dumps(target_careers)}" if target_careers else
+            "If no target careers are provided, infer 3 likely careers from the answers and analyze those."
+        )
+
+        prompt = f"""
+        You are an expert career coach. From the following compact answers, extract the user's current skills and compare
+        against required skills for the target careers. Then produce a personalized plan to close the gaps.
+
+        Answers (compact JSON):\n{json.dumps(compact_answers, ensure_ascii=False)}
+        {loc_context}
+        {careers_hint}
+
+        Return ONLY valid JSON in this exact schema:
+        {{
+          "userSkills": {{
+            "core": ["..."],
+            "technical": ["..."],
+            "soft": ["..."],
+            "tools": ["..."],
+            "certifications": ["..."]
+          }},
+          "careers": [
+            {{
+              "title": "Career Title",
+              "match": 75-100,
+              "requiredSkills": {{
+                "core": ["..."],
+                "technical": ["..."],
+                "soft": ["..."],
+                "tools": ["..."],
+                "certifications": ["..."]
+              }},
+              "gaps": {{
+                "missing": ["skills the user lacks"],
+                "toStrengthen": ["skills to improve"],
+                "notes": "very short rationale"
+              }},
+              "recommendations": {{
+                "courses": [{{"title":"...","provider":"Coursera/edX/YouTube","url":"https://..."}}],
+                "projects": [{{"title":"...","description":"1-2 lines","steps":["step 1","step 2"]}}],
+                "certifications": ["..."]
+              }},
+              "next90DaysPlan": {{
+                "day0_30": ["..."],
+                "day31_60": ["..."],
+                "day61_90": ["..."]
+              }},
+              "metrics": ["e.g., build 2 projects, 10 LeetCode easy, pass XYZ cert"]
+            }}
+          ]
+        }}
+
+        Notes:
+        - Tailor courses/providers to the user's locations when possible (e.g., local colleges, state boards, country-specific certs).
+        - Prefer beginner-friendly, reputable resources. Include at least 1 free option.
+        - Keep text concise; avoid long paragraphs.
+        - Return ONLY JSON. No markdown fences or extra text.
+        """
+
+        resp = career_ai.generate_content(prompt)
+        raw = (resp.text or "").strip()
+        try:
+            parsed = json.loads(raw)
+        except Exception:
+            parsed = extract_json_from_text(raw)
+        if not parsed or not isinstance(parsed, dict):
+            raise ValueError("Model did not return a valid JSON object for skill gap analysis.")
+
+        return jsonify(parsed)
+    except Exception as e:
+        print(f"Skill gap analysis error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
