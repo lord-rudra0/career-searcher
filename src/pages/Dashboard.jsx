@@ -4,7 +4,7 @@ import Footer from '@/components/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/services/api';
-import { User, Target, BarChart3, CheckCircle2, Clock, ListChecks, Sparkles, TrendingUp } from 'lucide-react';
+import { User, Target, BarChart3, CheckCircle2, Clock, ListChecks, Sparkles, TrendingUp, Circle } from 'lucide-react';
 
 const StatCard = ({ title, value, icon: Icon, footer, delta }) => (
   <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-md transition">
@@ -34,6 +34,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [skillGapResults, setSkillGapResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [journeyProgress, setJourneyProgress] = useState({});
+  const [topCareers, setTopCareers] = useState([]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -53,6 +55,36 @@ export default function Dashboard() {
     load();
   }, [isAuthenticated, navigate]);
 
+  // Load journey progress: first localStorage for instant UX, then server to sync
+  useEffect(() => {
+    const key = user?._id || user?.email || 'anon';
+    try {
+      const saved = JSON.parse(localStorage.getItem(`journeyProgress:${key}`) || '{}');
+      setJourneyProgress(saved && typeof saved === 'object' ? saved : {});
+    } catch {
+      setJourneyProgress({});
+    }
+    // Fetch from server and overwrite/merge
+    (async () => {
+      try {
+        const res = await api.getJourneyProgress();
+        const serverProg = res?.progress && typeof res.progress === 'object' ? res.progress : {};
+        // Merge local and server (server wins)
+        const next = { ...saved, ...serverProg };
+        setJourneyProgress(next);
+        try { localStorage.setItem(`journeyProgress:${key}`, JSON.stringify(next)); } catch {}
+      } catch (err) {
+        // ignore; stay with local
+      }
+    })();
+  }, [user?._id, user?.email]);
+
+  const persistJourneyProgress = async (next) => {
+    const key = user?._id || user?.email || 'anon';
+    try { localStorage.setItem(`journeyProgress:${key}`, JSON.stringify(next)); } catch {}
+    try { await api.updateJourneyProgress(next, true); } catch {}
+  };
+
   const lastSkillGapDate = useMemo(() => {
     if (!skillGapResults.length) return '-';
     const latest = skillGapResults.reduce((a, b) => new Date(a.createdAt) > new Date(b.createdAt) ? a : b);
@@ -65,6 +97,29 @@ export default function Dashboard() {
       return Array.isArray(arr) ? arr : [];
     } catch { return []; }
   }, []);
+
+  // Load top careers from backend with local fallback
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.getTopCareers(3);
+        const list = Array.isArray(res?.careers) ? res.careers : [];
+        if (list.length) {
+          setTopCareers(list);
+          return;
+        }
+      } catch {}
+      // Fallback to local cache if server has none
+      if (recentAssessments.length) {
+        const latest = recentAssessments[0];
+        const list = Array.isArray(latest?.aiCareers) ? latest.aiCareers : [];
+        const sorted = [...list].sort((a, b) => (b?.match || 0) - (a?.match || 0));
+        setTopCareers(sorted.slice(0, 3));
+      } else {
+        setTopCareers([]);
+      }
+    })();
+  }, [recentAssessments.length]);
 
   const profileCompleteness = useMemo(() => {
     if (!user) return 0;
@@ -134,6 +189,15 @@ export default function Dashboard() {
   const { cls, stream } = getClassAndStream();
   const journeySteps = useMemo(() => buildJourney({ cls, stream }), [cls, stream]);
 
+  const isStepDone = (title) => !!journeyProgress[title];
+  const toggleStep = (e, title) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const next = { ...journeyProgress, [title]: !journeyProgress[title] };
+    setJourneyProgress(next);
+    persistJourneyProgress(next);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50">
       <Navbar />
@@ -178,6 +242,57 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Profile Checklist */}
+        <div className="mt-10 bg-white rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold flex items-center gap-2"><ListChecks className="w-5 h-5"/> Profile Checklist</h2>
+          </div>
+          {user ? (
+            <ul className="mt-4 space-y-3">
+              {(() => {
+                const prefs = user?.preferences || {};
+                const items = [
+                  {
+                    key: 'stream',
+                    label: 'Set your stream (Science/Commerce/Humanities)',
+                    done: !!prefs.stream,
+                    to: '/profile/edit'
+                  },
+                  {
+                    key: 'targetExam',
+                    label: 'Pick a target exam (e.g., JEE/NEET/CUET/—)',
+                    done: !!prefs.targetExam,
+                    to: '/profile/edit'
+                  },
+                  {
+                    key: 'colleges',
+                    label: 'Add at least 3 colleges to your shortlist',
+                    done: Array.isArray(prefs.colleges) && prefs.colleges.length >= 3,
+                    to: '/profile/edit'
+                  },
+                ];
+                return items.map(it => (
+                  <li key={it.key} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      {it.done ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      ) : (
+                        <Circle className="w-5 h-5 text-gray-400" />
+                      )}
+                      <span className={it.done ? 'text-gray-500 line-through' : ''}>{it.label}</span>
+                    </div>
+                    {!it.done && (
+                      <Link to={it.to} className="text-xs text-indigo-600 hover:underline">Update</Link>
+                    )}
+                  </li>
+                ));
+              })()}
+            </ul>
+          ) : (
+            <div className="mt-4 text-sm text-gray-600">Sign in to see your checklist.</div>
+          )}
+        </div>
+
         {/* Personalized Journey section */}
         <div className="mt-10 bg-white rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between">
@@ -190,12 +305,18 @@ export default function Dashboard() {
           {journeySteps.length ? (
             <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {journeySteps.map((s, i) => (
-                <Link key={i} to={s.to} className="block p-5 rounded-xl border hover:shadow-md transition">
+                <Link key={i} to={s.to} className={`block p-5 rounded-xl border hover:shadow-md transition ${isStepDone(s.title) ? 'bg-emerald-50 border-emerald-200' : ''}`}>
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{s.title}</p>
-                    {s.badge && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">{s.badge}</span>
-                    )}
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      {isStepDone(s.title) ? <CheckCircle2 className="w-4 h-4 text-emerald-600"/> : <Circle className="w-4 h-4 text-gray-400"/>}
+                      {s.title}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      {s.badge && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100">{s.badge}</span>
+                      )}
+                      <button onClick={(e) => toggleStep(e, s.title)} className="text-xs text-gray-500 hover:text-emerald-600">{isStepDone(s.title) ? 'Undo' : 'Done'}</button>
+                    </div>
                   </div>
                   <p className="text-xs text-gray-600 mt-2">{s.desc}</p>
                 </Link>
@@ -206,6 +327,31 @@ export default function Dashboard() {
               We couldn’t detect your class/stream. Complete your profile to get a tailored roadmap.
               <Link to="/profile/edit" className="ml-2 text-indigo-600 hover:underline">Complete Profile</Link>
             </div>
+          )}
+        </div>
+
+        {/* Top Recommended Careers */}
+        <div className="mt-10 bg-white rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold flex items-center gap-2"><Sparkles className="w-5 h-5 text-yellow-500"/> Top Recommended Careers</h2>
+            {!topCareers.length && (
+              <Link to="/test" className="text-xs text-indigo-600 hover:underline">Take Career Test</Link>
+            )}
+          </div>
+          {topCareers.length ? (
+            <ul className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {topCareers.map((c, idx) => (
+                <li key={idx} className="p-4 rounded-xl border">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">{c.title || 'Career'}</p>
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">{typeof c.match === 'number' ? `${c.match}%` : '—'}</span>
+                  </div>
+                  {c.description && <p className="text-xs text-gray-600 mt-2 line-clamp-3">{c.description}</p>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="mt-4 text-sm text-gray-600">No assessments found on this device. Run a quick assessment to see personalized career recommendations.</div>
           )}
         </div>
 

@@ -60,6 +60,70 @@ app.get('/api/profile', verifyToken, (req, res) => {
   res.json({ message: 'Protected route accessed successfully', user: req.user });
 });
 
+// ----- Journey Progress Endpoints -----
+// Get current user's journey progress
+app.get('/user/journey-progress', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('journeyProgress');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const progress = user.journeyProgress instanceof Map
+      ? Object.fromEntries(user.journeyProgress)
+      : (user.journeyProgress || {});
+    res.json({ progress });
+  } catch (err) {
+    console.error('Failed to fetch journey progress:', err.message);
+    res.status(500).json({ error: 'Failed to fetch journey progress' });
+  }
+});
+
+// Update user's journey progress (replace or merge)
+// Accepts body: { progress: { [title]: boolean }, merge?: boolean }
+app.put('/user/journey-progress', verifyToken, async (req, res) => {
+  try {
+    const { progress, merge } = req.body || {};
+    if (!progress || typeof progress !== 'object') {
+      return res.status(400).json({ error: 'progress object is required' });
+    }
+
+    const user = await User.findById(req.user.id).select('journeyProgress');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (merge) {
+      const current = user.journeyProgress instanceof Map ? Object.fromEntries(user.journeyProgress) : (user.journeyProgress || {});
+      const next = { ...current, ...progress };
+      user.journeyProgress = next;
+    } else {
+      user.journeyProgress = progress;
+    }
+
+    await user.save();
+    const out = user.journeyProgress instanceof Map ? Object.fromEntries(user.journeyProgress) : user.journeyProgress;
+    res.json({ progress: out });
+  } catch (err) {
+    console.error('Failed to update journey progress:', err.message);
+    res.status(500).json({ error: 'Failed to update journey progress' });
+  }
+});
+
+// ----- Top Careers Endpoint -----
+// Returns top N careers from the latest AnalysisResult for the authenticated user
+app.get('/user/top-careers', verifyToken, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit || '3', 10), 10);
+    const latest = await AnalysisResult.findOne({ userId: req.user.id })
+      .sort({ createdAt: -1 })
+      .select('aiCareers createdAt groupName')
+      .lean();
+    if (!latest) return res.json({ careers: [] });
+    const list = Array.isArray(latest.aiCareers) ? latest.aiCareers : [];
+    const sorted = [...list].sort((a, b) => (b?.match || 0) - (a?.match || 0));
+    res.json({ careers: sorted.slice(0, limit), groupName: latest.groupName, createdAt: latest.createdAt });
+  } catch (err) {
+    console.error('Failed to fetch top careers:', err.message);
+    res.status(500).json({ error: 'Failed to fetch top careers' });
+  }
+});
+
 // Fetch current user's analysis results (requires auth)
 app.get('/user/analysis-results', verifyToken, async (req, res) => {
     try {
@@ -407,11 +471,11 @@ app.post("/auth/register", async (req, res) => {
 // Use JWT verification for fetching current user
 app.get("/auth/user", verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('username email groupType preferences');
+    const user = await User.findById(req.user.id).select('username email groupType preferences journeyProgress');
     if (!user) {
       return res.status(404).send("User not found");
     }
-    return res.json({ username: user.username, email: user.email, groupType: user.groupType, preferences: user.preferences });
+    return res.json({ username: user.username, email: user.email, groupType: user.groupType, preferences: user.preferences, journeyProgress: user.journeyProgress });
   } catch (err) {
     return res.status(500).send("Error retrieving user data");
   }

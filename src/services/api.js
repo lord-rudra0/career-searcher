@@ -253,6 +253,22 @@ const api = {
     getUserAnalysisResults: async (limit = 10) => {
         const res = await axiosInstance.get('/user/analysis-results', { params: { limit } });
         return res.data;
+    },
+
+    // Journey progress
+    getJourneyProgress: async () => {
+        const res = await axiosInstance.get('/user/journey-progress');
+        return res.data; // { progress }
+    },
+    updateJourneyProgress: async (progress, merge = true) => {
+        const res = await axiosInstance.put('/user/journey-progress', { progress, merge });
+        return res.data; // { progress }
+    },
+
+    // Top careers from latest analysis for authenticated user
+    getTopCareers: async (limit = 3) => {
+        const res = await axiosInstance.get('/user/top-careers', { params: { limit } });
+        return res.data; // { careers, groupName, createdAt }
     }
 };
 

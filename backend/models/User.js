@@ -20,6 +20,10 @@ const UserSchema = new mongoose.Schema({
   groupType: { type: String, required: [true, 'Group type is required'] },
   // Optional location preferences
   preferences: {
+    // Academic profile fields used by dashboard/checklist
+    stream: { type: String },
+    targetExam: { type: String },
+    colleges: { type: [String], default: [] },
     jobLocation: {
       country: { type: String },
       state: { type: String },
@@ -32,6 +36,8 @@ const UserSchema = new mongoose.Schema({
       district: { type: String },
     }
   },
+  // Map of journey step title -> boolean (completed)
+  journeyProgress: { type: Map, of: Boolean, default: {} },
   createdAt: {
     type: Date,
     default: Date.now
