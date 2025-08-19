@@ -12,6 +12,9 @@ function RegisterForm({ onSuccess }) {
     const [studyCountry, setStudyCountry] = useState('');
     const [studyState, setStudyState] = useState('');
     const [studyDistrict, setStudyDistrict] = useState('');
+    const [stream, setStream] = useState('');
+    const [targetExam, setTargetExam] = useState('');
+    const [colleges, setColleges] = useState(['', '', '']);
     const [error, setError] = useState('');
     const { signup } = useAuth();
 
@@ -28,7 +31,10 @@ function RegisterForm({ onSuccess }) {
                     country: studyCountry || undefined,
                     state: studyState || undefined,
                     district: studyDistrict || undefined
-                }
+                },
+                stream: stream || undefined,
+                targetExam: targetExam || undefined,
+                colleges: colleges.map(c => c.trim()).filter(Boolean).slice(0,3)
             };
             await signup(username, email, password, groupType, preferences);
             onSuccess();
@@ -91,6 +97,22 @@ function RegisterForm({ onSuccess }) {
                     <option>UnderGraduate Student</option>
                     <option>PostGraduate</option>
                 </select>
+            </div>
+
+            {/* Academic preferences */}
+            <div className="grid grid-cols-1 gap-4">
+                <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Academic Preferences (optional)</h3>
+                    <div className="grid grid-cols-1 gap-2">
+                        <input placeholder="Stream (e.g., Science, Commerce, Arts)" value={stream} onChange={(e) => setStream(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                        <input placeholder="Target Exam (e.g., JEE, NEET, CUET)" value={targetExam} onChange={(e) => setTargetExam(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                        <div className="grid grid-cols-1 gap-2">
+                            {colleges.map((c, i) => (
+                                <input key={i} placeholder={`Preferred College ${i+1}`} value={c} onChange={(e) => setColleges(prev => prev.map((v, idx) => idx===i ? e.target.value : v))} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4">

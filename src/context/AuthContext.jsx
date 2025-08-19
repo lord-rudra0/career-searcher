@@ -29,11 +29,13 @@ export const AuthProvider = ({ children }) => {
         if (response.ok) {
           const userData = await response.json();
           setUser({
-            // /auth/user returns: { username, email, groupType, preferences }
+            id: userData.id || userData._id,
+            // /auth/user returns: { username, email, groupType, preferences, journeyProgress? }
             name: userData.username,
             email: userData.email,
             groupType: userData.groupType,
-            preferences: userData.preferences
+            preferences: userData.preferences,
+            journeyProgress: userData.journeyProgress || {}
           });
           setIsAuthenticated(true);
         } else {
@@ -60,10 +62,12 @@ export const AuthProvider = ({ children }) => {
       if (response.ok) {
         const userData = await response.json();
         setUser({
+          id: userData.id || userData._id,
           name: userData.username,
           email: userData.email,
           groupType: userData.groupType,
-          preferences: userData.preferences
+          preferences: userData.preferences,
+          journeyProgress: userData.journeyProgress || {}
         });
         setIsAuthenticated(true);
       }
@@ -88,11 +92,12 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", token);
 
       setUser({
-        id: userData.id,
+        id: userData.id || userData._id,
         name: userData.username,
         email: userData.email,
         groupType: userData.groupType,
-        preferences: userData.preferences
+        preferences: userData.preferences,
+        journeyProgress: userData.journeyProgress || {}
       });
       setIsAuthenticated(true);
       
@@ -120,11 +125,12 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", token);
 
       setUser({
-        id: userData.id,
+        id: userData.id || userData._id,
         name: userData.username,
         email: userData.email,
         groupType: userData.groupType,
-        preferences: userData.preferences
+        preferences: userData.preferences,
+        journeyProgress: userData.journeyProgress || {}
       });
       setIsAuthenticated(true);
       

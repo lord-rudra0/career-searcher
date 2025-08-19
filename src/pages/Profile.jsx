@@ -18,7 +18,10 @@ function Profile() {
     groupType: '',
     preferences: {
       jobLocation: { country: '', state: '', district: '' },
-      studyLocation: { country: '', state: '', district: '' }
+      studyLocation: { country: '', state: '', district: '' },
+      stream: '',
+      targetExam: '',
+      colleges: ['', '', '']
     }
   });
 
@@ -39,7 +42,12 @@ function Profile() {
             country: user.preferences?.studyLocation?.country || '',
             state: user.preferences?.studyLocation?.state || '',
             district: user.preferences?.studyLocation?.district || ''
-          }
+          },
+          stream: user.preferences?.stream || '',
+          targetExam: user.preferences?.targetExam || '',
+          colleges: Array.isArray(user.preferences?.colleges)
+            ? [...user.preferences.colleges, '', '', ''].slice(0,3)
+            : ['', '', '']
         }
       });
     }
@@ -102,7 +110,10 @@ function Profile() {
         username: form.username,
         email: form.email,
         groupType: form.groupType,
-        preferences: form.preferences
+        preferences: {
+          ...form.preferences,
+          colleges: (form.preferences.colleges || []).map(c => String(c).trim()).filter(Boolean).slice(0,3)
+        }
       });
       await refreshUser();
     } catch (e) {
@@ -130,6 +141,30 @@ function Profile() {
                   <span className="text-sm text-gray-600 flex items-center"><UserIcon className="w-4 h-4 mr-2"/>Username</span>
                   <input value={form.username} onChange={e=>handleChange('username', e.target.value)} className="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" />
                 </label>
+
+              {/* Academic Preferences */}
+              <div className="pt-2">
+                <h3 className="text-sm font-semibold text-gray-700">Academic Preferences</h3>
+                <div className="grid grid-cols-1 gap-3 mt-2">
+                  <input placeholder="Stream (e.g., Science, Commerce, Arts)" value={form.preferences.stream}
+                         onChange={e=>handleChange('preferences.stream', e.target.value)}
+                         className="border rounded-lg px-3 py-2" />
+                  <input placeholder="Target Exam (e.g., JEE, NEET, CUET)" value={form.preferences.targetExam}
+                         onChange={e=>handleChange('preferences.targetExam', e.target.value)}
+                         className="border rounded-lg px-3 py-2" />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {form.preferences.colleges.map((c, i) => (
+                      <input key={i} placeholder={`Preferred College ${i+1}`} value={c}
+                             onChange={e=>{
+                               const next = [...form.preferences.colleges];
+                               next[i] = e.target.value;
+                               handleChange('preferences.colleges', next);
+                             }}
+                             className="border rounded-lg px-3 py-2" />
+                    ))}
+                  </div>
+                </div>
+              </div>
                 <label className="block">
                   <span className="text-sm text-gray-600 flex items-center"><Mail className="w-4 h-4 mr-2"/>Email</span>
                   <input type="email" value={form.email} onChange={e=>handleChange('email', e.target.value)} className="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" />
