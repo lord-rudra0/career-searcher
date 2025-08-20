@@ -728,6 +728,67 @@ def chat():
             "message": str(e)
         }), 500
 
+@app.route('/course-plan', methods=['POST'])
+def course_plan():
+    try:
+        data = request.json or {}
+        career_title = data.get('careerTitle') or data.get('career')
+        course = data.get('course') or {}
+        user_skills = data.get('userSkills') or {}
+        gaps = data.get('gaps') or {}
+
+        if not career_title or not course:
+            return jsonify({"error": "careerTitle and course are required"}), 400
+
+        # Build a concise prompt for a 90-day plan aligned to the selected course
+        course_name = course.get('title') or course.get('name') or 'Selected Course'
+        provider = course.get('provider') or course.get('platform')
+        link = course.get('link') or course.get('url')
+
+        prompt = f"""
+        Create a practical 90-day learning plan tailored to prepare for the career: {career_title}.
+        Align the plan specifically with the selected course: {course_name}{' (' + provider + ')' if provider else ''}{' - ' + link if link else ''}.
+
+        Consider the user's current skills and gaps provided as JSON.
+        User skills: {json.dumps(user_skills)[:1200]}
+        Gaps: {json.dumps(gaps)[:800]}
+
+        Requirements:
+        - Structure the output as JSON ONLY with keys day0_30, day31_60, day61_90.
+        - Each value should be an array of 4-6 concise, actionable bullet steps (strings).
+        - Reference the course content pacing (e.g., modules/chapters) and integrate short projects, practice, and checkpoints.
+        - Include at least one measurable metric per period (e.g., quiz score, project milestone, practice problem counts).
+        - Keep language concise and beginner-friendly.
+
+        Example JSON shape:
+        {{
+          "day0_30": ["..."],
+          "day31_60": ["..."],
+          "day61_90": ["..."]
+        }}
+        """
+
+        resp = career_ai.generate_content(prompt)
+        raw = (resp.text or '').strip()
+        try:
+            parsed = json.loads(raw)
+        except Exception:
+            parsed = extract_json_from_text(raw)
+        if not parsed or not isinstance(parsed, dict):
+            raise ValueError("Model did not return a valid JSON object for course plan")
+
+        # Normalize alternative keys
+        plan = {
+            'day0_30': parsed.get('day0_30') or parsed.get('days0_30') or parsed.get('days0to30') or parsed.get('Days 0-30') or [],
+            'day31_60': parsed.get('day31_60') or parsed.get('days31_60') or parsed.get('days31to60') or parsed.get('Days 31-60') or [],
+            'day61_90': parsed.get('day61_90') or parsed.get('days61_90') or parsed.get('days61to90') or parsed.get('Days 61-90') or [],
+        }
+
+        return jsonify({ 'plan': plan })
+    except Exception as e:
+        print(f"Course plan error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     try:
         print("Starting Flask server on port 5002...")

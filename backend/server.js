@@ -713,13 +713,15 @@ app.post('/api/web-search', async (req, res) => {
     }
 });
 
-app.post('/api/search-web-careers', async (req, res) => {
+// Proxy: Generate dynamic 90-day course plan -> Flask
+app.post('/api/course-plan', async (req, res) => {
     try {
-        const response = await axios.post(`${PYTHON_API_URL}/search-web-careers`, req.body);
+        const response = await axios.post(`${PYTHON_API_URL}/course-plan`, req.body, { timeout: 120000 });
         res.json(response.data);
     } catch (error) {
-        console.error('Error searching web careers:', error.message);
-        res.status(500).json({ error: error.message });
+        console.error('Error generating course plan:', error.message);
+        const msg = error.response?.data || { error: error.message };
+        res.status(500).json(msg);
     }
 });
 

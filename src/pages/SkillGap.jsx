@@ -14,6 +14,8 @@ const SkillGapPage = () => {
   const [completedCourses, setCompletedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [plans, setPlans] = useState({}); // { [careerIndex]: { day0_30, day31_60, day61_90 } }
+  const [planLoading, setPlanLoading] = useState({}); // { [careerIndex]: boolean }
 
   useEffect(() => {
     const load = async () => {
@@ -48,6 +50,14 @@ const SkillGapPage = () => {
     load();
   }, [id, navigate]);
 
+  const handleClosePlan = (careerIndex) => {
+    setPlans(prev => {
+      const next = { ...prev };
+      delete next[careerIndex];
+      return next;
+    });
+  };
+
   const handleToggle = async (type, item, nextCompleted) => {
     if (!data?.id) return;
     try {
@@ -56,6 +66,45 @@ const SkillGapPage = () => {
       setCompletedCourses(res.completedCourses || []);
     } catch (e) {
       console.error('Failed to update progress', e);
+    }
+  };
+
+  const handleGeneratePlan = async (careerIndex, course) => {
+    try {
+      setPlanLoading(prev => ({ ...prev, [careerIndex]: true }));
+      const career = data?.careers?.[careerIndex];
+      const payload = {
+        careerTitle: career?.title,
+        course,
+        userSkills: data?.userSkills || {},
+        gaps: career?.gaps || {},
+      };
+      const res = await api.generateCoursePlan(payload);
+      const raw = res?.plan || {};
+      const pick = (obj, keys) => keys.map(k => obj?.[k]).find(v => v !== undefined && v !== null);
+      const toArray = (val) => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val.filter(Boolean);
+        if (typeof val === 'string') {
+          // split by newline or bullet
+          return val
+            .split(/\r?\n|•|\d+\.|\-/)
+            .map(s => s.trim())
+            .filter(Boolean);
+        }
+        return [];
+      };
+      const normalized = {
+        day0_30: toArray(pick(raw, ['day0_30','days0_30','day0-30','days0-30','0_30','0-30'])),
+        day31_60: toArray(pick(raw, ['day31_60','days31_60','day31-60','days31-60','31_60','31-60'])),
+        day61_90: toArray(pick(raw, ['day61_90','days61_90','day61-90','days61-90','61_90','61-90'])),
+      };
+      setPlans(prev => ({ ...prev, [careerIndex]: normalized }));
+    } catch (e) {
+      console.error('Failed to generate plan', e);
+      setError(e.message || 'Failed to generate plan');
+    } finally {
+      setPlanLoading(prev => ({ ...prev, [careerIndex]: false }));
     }
   };
 
@@ -78,6 +127,10 @@ const SkillGapPage = () => {
               completedSkills={completedSkills}
               completedCourses={completedCourses}
               onToggle={handleToggle}
+              plans={plans}
+              onGeneratePlan={handleGeneratePlan}
+              planLoading={planLoading}
+              onClosePlan={handleClosePlan}
             />
           </div>
         )}

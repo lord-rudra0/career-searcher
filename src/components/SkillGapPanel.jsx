@@ -56,13 +56,13 @@ const SkillList = ({ title, items = [], type = 'default', enableToggle = false, 
   </div>
 );
 
-const LinkList = ({ items = [], completed = [], onToggle }) => (
+const LinkList = ({ items = [], completed = [], onToggle, onGeneratePlan, careerIndex, planLoading = {} }) => (
   <ul className="list-disc list-inside space-y-2">
     {(items || []).slice(0, 20).map((c, i) => {
       const label = c.title || c.name || c.link || `course-${i}`;
       const checked = completed.includes(label);
       return (
-        <li key={i} className="text-sm text-gray-700 flex items-center">
+        <li key={i} className="text-sm text-gray-700 flex items-center flex-wrap gap-2">
           <input
             type="checkbox"
             className="mr-2"
@@ -79,13 +79,23 @@ const LinkList = ({ items = [], completed = [], onToggle }) => (
               Visit
             </a>
           )}
+          {onGeneratePlan && (
+            <button
+              className="ml-2 px-2 py-0.5 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+              onClick={() => onGeneratePlan(careerIndex, c)}
+              disabled={!!planLoading[careerIndex]}
+              title="Generate a personalized 90-day plan for this course"
+            >
+              {planLoading[careerIndex] ? 'Generating…' : 'Generate Plan'}
+            </button>
+          )}
         </li>
       );
     })}
   </ul>
 );
 
-export default function SkillGapPanel({ data, completedSkills = [], completedCourses = [], onToggle }) {
+export default function SkillGapPanel({ data, completedSkills = [], completedCourses = [], onToggle, plans = {}, onGeneratePlan, planLoading = {}, onClosePlan }) {
   if (!data) return null;
   const { userSkills = {}, careers = [] } = data;
 
@@ -148,7 +158,14 @@ export default function SkillGapPanel({ data, completedSkills = [], completedCou
           </Section>
 
           <Section title="Recommended Courses" icon={BookOpen}>
-            <LinkList items={c.recommendations?.courses} completed={completedCourses} onToggle={onToggle} />
+            <LinkList
+              items={c.recommendations?.courses}
+              completed={completedCourses}
+              onToggle={onToggle}
+              onGeneratePlan={onGeneratePlan}
+              careerIndex={idx}
+              planLoading={planLoading}
+            />
           </Section>
 
           <Section title="Recommended Projects">
@@ -166,20 +183,52 @@ export default function SkillGapPanel({ data, completedSkills = [], completedCou
           </Section>
 
           <Section title="Next 90 Days Plan">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
-              <div>
-                <div className="font-medium mb-1">Days 0-30</div>
-                <div>{c.next90DaysPlan?.days0_30 || c.next90DaysPlan?.days0to30 || '—'}</div>
-              </div>
-              <div>
-                <div className="font-medium mb-1">Days 31-60</div>
-                <div>{c.next90DaysPlan?.days31_60 || c.next90DaysPlan?.days31to60 || '—'}</div>
-              </div>
-              <div>
-                <div className="font-medium mb-1">Days 61-90</div>
-                <div>{c.next90DaysPlan?.days61_90 || c.next90DaysPlan?.days61to90 || '—'}</div>
-              </div>
-            </div>
+            {(() => {
+              const plan = plans?.[idx];
+              const renderBlock = (title, val) => (
+                <div>
+                  <div className="font-medium mb-1">{title}</div>
+                  {Array.isArray(val) ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {val.map((t, i) => (
+                        <li key={i}>{t}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div>{val || '—'}</div>
+                  )}
+                </div>
+              );
+              if (plan) {
+                return (
+                  <div>
+                    <div className="flex justify-end mb-2">
+                      {onClosePlan && (
+                        <button
+                          className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                          onClick={() => onClosePlan(idx)}
+                          title="Hide generated plan"
+                        >
+                          Close Plan
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
+                      {renderBlock('Days 0-30', plan.day0_30)}
+                      {renderBlock('Days 31-60', plan.day31_60)}
+                      {renderBlock('Days 61-90', plan.day61_90)}
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
+                  {renderBlock('Days 0-30', c.next90DaysPlan?.days0_30 || c.next90DaysPlan?.days0to30)}
+                  {renderBlock('Days 31-60', c.next90DaysPlan?.days31_60 || c.next90DaysPlan?.days31to60)}
+                  {renderBlock('Days 61-90', c.next90DaysPlan?.days61_90 || c.next90DaysPlan?.days61to90)}
+                </div>
+              );
+            })()}
           </Section>
 
           {Array.isArray(c.metrics) && c.metrics.length > 0 && (
