@@ -92,24 +92,16 @@ export default function Dashboard() {
     return new Date(latest.createdAt).toLocaleString();
   }, [skillGapResults]);
 
-  // Load recent assessments: server first, then local fallback
+  // Load recent assessments: server only
   useEffect(() => {
     (async () => {
       try {
         const { items } = await api.getRecentAssessments(5);
-        if (Array.isArray(items) && items.length) {
-          setRecentAssessments(items);
-          return;
-        }
-      } catch {}
-      try {
-        const arr = JSON.parse(localStorage.getItem('careerResults') || '[]');
-        setRecentAssessments(Array.isArray(arr) ? arr : []);
+        setRecentAssessments(Array.isArray(items) ? items : []);
       } catch { setRecentAssessments([]); }
     })();
   }, []);
-
-  const assessmentsFromServer = useMemo(() => recentAssessments.length > 0 && !!recentAssessments[0]._id, [recentAssessments]);
+  
 
   // Load top careers from backend with local fallback
   useEffect(() => {
@@ -232,7 +224,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            <StatCard title="Assessments (recent)" value={recentAssessments.length} icon={BarChart3} footer={assessmentsFromServer ? 'Synced from server' : 'Stored locally on this device'} delta={recentAssessments.length > 0 ? 4 : 0} />
+            <StatCard title="Assessments (recent)" value={recentAssessments.length} icon={BarChart3} footer={'Synced from server'} delta={recentAssessments.length > 0 ? 4 : 0} />
             <StatCard title="Skill Gap Analyses" value={skillGapResults.length} icon={Target} footer={`Last: ${lastSkillGapDate}`} delta={skillGapResults.length > 0 ? 7 : 0} />
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <div className="flex items-center justify-between">

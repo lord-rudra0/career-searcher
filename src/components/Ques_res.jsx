@@ -344,25 +344,13 @@ function App() {
       setPdfCareerResults(response.pdf_based_careers);
       setLastFinalAnswers(finalAnswers);
 
-      // Store results in localStorage
+      // Prepare result data for server persistence
       const resultData = {
         timestamp: new Date().toISOString(),
         group: groupName,
         aiCareers: response.ai_generated_careers,
         pdfCareers: response.pdf_based_careers
       };
-
-      // Get existing results or initialize empty array
-      const existingResults = JSON.parse(localStorage.getItem('careerResults') || '[]');
-      
-      // Add new result to the beginning of the array
-      existingResults.unshift(resultData);
-      
-      // Keep only the last 10 results
-      const updatedResults = existingResults.slice(0, 10);
-      
-      // Save to localStorage
-      localStorage.setItem('careerResults', JSON.stringify(updatedResults));
 
       try {
         await api.saveAssessmentResult(resultData);
