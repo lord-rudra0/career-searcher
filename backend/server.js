@@ -58,6 +58,109 @@ app.use('/api/auth', authRoutes);
 // Protected route example
 app.get('/api/profile', verifyToken, (req, res) => {
   res.json({ message: 'Protected route accessed successfully', user: req.user });
+
+// ----- Tryouts (A/B) Endpoints -----
+// In-memory store for prototype purposes only
+const tryouts = new Map();
+
+function generateTasksForPath(careerTitle, durationDays) {
+  const skills = ['Foundations', 'Tooling', 'Problem Solving', 'Project'];
+  const templates = {
+    Foundations: (ct) => `Read a 10-min intro on ${ct} fundamentals and write 3 bullets`,
+    Tooling: (ct) => `Install/setup a basic ${ct} tool and capture a screenshot`,
+    'Problem Solving': (ct) => `Solve one micro-challenge related to ${ct}`,
+    Project: (ct) => `Create a tiny deliverable for ${ct} and share link`
+  };
+  const arr = [];
+  for (let d = 0; d < durationDays; d++) {
+    const tag = skills[d % skills.length];
+    arr.push({
+      id: `${d + 1}`,
+      day: d,
+      title: templates[tag](careerTitle),
+      skillTag: tag,
+      status: 'pending',
+      timeMin: 0,
+      interest: 0,
+      difficulty: 0,
+      evidence: []
+    });
+  }
+  return arr;
+}
+
+function computeSideSummary(tasks) {
+  const total = tasks.length || 1;
+  const completed = tasks.filter(t => t.status === 'completed');
+  const completionRate = completed.length / total;
+  const avg = (key) => {
+    const vals = completed.map(t => Number(t[key]) || 0);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  };
+  const avgInterest = avg('interest');
+  const avgDifficulty = avg('difficulty');
+  const avgTime = avg('timeMin');
+  // Simple fit formula (0-100): interest up, difficulty down (but not penalize small), time moderate
+  const fitScore = Math.max(0, Math.min(100, (avgInterest * 18) + (5 - Math.min(5, avgDifficulty)) * 10 + Math.min(30, avgTime)));
+  return { completionRate, avgInterest, avgDifficulty, fitScore };
+}
+
+app.post('/tryouts', verifyToken, async (req, res) => {
+  try {
+    const { pathA, pathB, durationDays = 7 } = req.body || {};
+    if (!pathA || !pathB) return res.status(400).json({ error: 'pathA and pathB are required' });
+    const id = crypto.randomUUID();
+    const t = {
+      id,
+      userId: req.user?.id,
+      pathA,
+      pathB,
+      durationDays: Math.max(3, Math.min(14, Number(durationDays) || 7)),
+      createdAt: new Date().toISOString(),
+      tasks: {
+        A: generateTasksForPath(pathA, Math.max(3, Math.min(14, Number(durationDays) || 7))),
+        B: generateTasksForPath(pathB, Math.max(3, Math.min(14, Number(durationDays) || 7))),
+      },
+    };
+    t.summary = { A: computeSideSummary(t.tasks.A), B: computeSideSummary(t.tasks.B) };
+    tryouts.set(id, t);
+    res.json({ tryoutId: id });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to create tryout' });
+  }
+});
+
+app.get('/tryouts/:id', verifyToken, async (req, res) => {
+  const item = tryouts.get(req.params.id);
+  if (!item) return res.status(404).json({ error: 'Not found' });
+  if (item.userId && String(item.userId) !== String(req.user.id)) return res.status(403).json({ error: 'Forbidden' });
+  res.json({ tryout: item });
+});
+
+app.post('/tryouts/:id/tasks/:key/:taskId/log', verifyToken, async (req, res) => {
+  const item = tryouts.get(req.params.id);
+  if (!item) return res.status(404).json({ error: 'Not found' });
+  if (item.userId && String(item.userId) !== String(req.user.id)) return res.status(403).json({ error: 'Forbidden' });
+  const key = req.params.key === 'A' ? 'A' : 'B';
+  const list = item.tasks[key] || [];
+  const idx = list.findIndex(t => String(t.id) === String(req.params.taskId));
+  if (idx === -1) return res.status(404).json({ error: 'Task not found' });
+  const { timeMin = 0, interest = 0, difficulty = 0, evidence } = req.body || {};
+  list[idx].timeMin = Number(timeMin) || 0;
+  list[idx].interest = Number(interest) || 0;
+  list[idx].difficulty = Number(difficulty) || 0;
+  if (evidence) list[idx].evidence = [...(list[idx].evidence || []), String(evidence)];
+  list[idx].status = 'completed';
+  item.summary = { A: computeSideSummary(item.tasks.A), B: computeSideSummary(item.tasks.B) };
+  res.json({ ok: true });
+});
+
+app.get('/tryouts/:id/summary', verifyToken, async (req, res) => {
+  const item = tryouts.get(req.params.id);
+  if (!item) return res.status(404).json({ error: 'Not found' });
+  if (item.userId && String(item.userId) !== String(req.user.id)) return res.status(403).json({ error: 'Forbidden' });
+  res.json({ summary: item.summary || { A: computeSideSummary(item.tasks.A), B: computeSideSummary(item.tasks.B) } });
+});
 });
 
 // ----- Journey Progress Endpoints -----

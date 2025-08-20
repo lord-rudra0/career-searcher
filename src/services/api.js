@@ -162,6 +162,24 @@ const api = {
     const res = await axiosInstance.post('/api/course-plan', { careerTitle, course, userSkills, gaps });
     return res.data; // { plan: { day0_30, day31_60, day61_90 } }
   },
+
+  // Tryouts (A/B career trials)
+  createTryout: async ({ pathA, pathB, durationDays = 7 }) => {
+    const res = await axiosInstance.post('/tryouts', { pathA, pathB, durationDays });
+    return res.data; // { tryoutId }
+  },
+  getTryout: async (id) => {
+    const res = await axiosInstance.get(`/tryouts/${id}`);
+    return res.data; // { tryout }
+  },
+  logTask: async ({ id, key, taskId, payload }) => {
+    const res = await axiosInstance.post(`/tryouts/${id}/tasks/${key}/${taskId}/log`, payload);
+    return res.data; // { ok }
+  },
+  getTryoutSummary: async (id) => {
+    const res = await axiosInstance.get(`/tryouts/${id}/summary`);
+    return res.data; // { summary }
+  },
 };
 
 export default api;
