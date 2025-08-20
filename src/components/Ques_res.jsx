@@ -38,6 +38,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [showLoader, setShowLoader] = useState(false);
   const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
+  // Total target questions: predefined + AI-generated
+  const MAX_QUESTIONS = 20;
   const [webSearchResults, setWebSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [webCareerResults, setWebCareerResults] = useState(null);
@@ -261,7 +263,7 @@ function App() {
 
       // Generate AI question after predefined questions are finished
       if (currentQuestionIndex >= allQuestions.length - 1) {
-        if (updatedAnswers.length < 20) {
+        if (updatedAnswers.length < MAX_QUESTIONS) {
           console.log('\nStarting AI Question Generation');
           console.log('Predefined Questions Completed:', allQuestions.length);
           console.log('Current Total Answers:', updatedAnswers.length);
@@ -587,7 +589,7 @@ function App() {
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       {isGeneratingQuestion ? 'Generating...' : 'Loading...'}
                     </>
-                  ) : currentQuestionIndex < allQuestions.length - 1 ? (
+                  ) : currentQuestionIndex < MAX_QUESTIONS - 1 ? (
                     <>
                       Next
                       <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
