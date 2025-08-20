@@ -11,6 +11,7 @@ const User = require("./models/User.js");
 const Tryout = require('./models/Tryout.js');
 const AnalysisResult = require('./models/AnalysisResult.js');
 const FullAnalysisResult = require('./models/FullAnalysisResult.js');
+const Assessment = require('./models/Assessment.js');
 const SkillGapResult = require('./models/SkillGapResult.js');
 const TaskTemplate = require('./models/TaskTemplate.js');
 const PushSubscription = require('./models/PushSubscription.js');
@@ -18,6 +19,8 @@ const dotenv = require('dotenv');
 // Optional deps (install required): web-push, node-cron
 let webpush, cron;
 try { webpush = require('web-push'); } catch { webpush = null; }
+
+ 
 try { cron = require('node-cron'); } catch { cron = null; }
 // const cors = require('cors');
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
@@ -66,6 +69,40 @@ app.use('/api/auth', authRoutes);
 // Protected route example
 app.get('/api/profile', verifyToken, (req, res) => {
   res.json({ message: 'Protected route accessed successfully', user: req.user });
+});
+
+// ----- Assessments Endpoints -----
+// Save completed assessment
+app.post('/assessments', verifyToken, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const doc = await Assessment.create({
+      userId: req.user.id,
+      group: body.group || body.groupName || body.group_type || null,
+      analysis: body.analysis || body.summary || null,
+      aiCareers: Array.isArray(body.aiCareers) ? body.aiCareers : (Array.isArray(body.careers) ? body.careers : []),
+      timestamp: body.timestamp ? new Date(body.timestamp) : new Date(),
+    });
+    res.json({ ok: true, id: doc._id });
+  } catch (e) {
+    console.error('Save assessment failed:', e.message);
+    res.status(500).json({ error: 'Failed to save assessment' });
+  }
+});
+
+// Fetch recent assessments
+app.get('/assessments', verifyToken, async (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 5));
+    const items = await Assessment.find({ userId: req.user.id })
+      .sort({ timestamp: -1 })
+      .limit(limit)
+      .lean();
+    res.json({ items });
+  } catch (e) {
+    console.error('Fetch assessments failed:', e.message);
+    res.status(500).json({ error: 'Failed to fetch assessments' });
+  }
 });
 
 // ----- Tryouts (A/B) Endpoints -----

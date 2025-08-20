@@ -218,6 +218,15 @@ const api = {
     const res = await axiosInstance.post('/push/unsubscribe', { endpoint });
     return res.data; // { ok }
   },
+  // Assessments
+  saveAssessmentResult: async (payload) => {
+    const res = await axiosInstance.post('/assessments', payload);
+    return res.data; // { ok, id }
+  },
+  getRecentAssessments: async (limit = 5) => {
+    const res = await axiosInstance.get('/assessments', { params: { limit } });
+    return res.data; // { items }
+  },
 };
 
 export default api;

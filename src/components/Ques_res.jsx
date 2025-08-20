@@ -364,6 +364,12 @@ function App() {
       // Save to localStorage
       localStorage.setItem('careerResults', JSON.stringify(updatedResults));
 
+      try {
+        await api.saveAssessmentResult(resultData);
+      } catch (e) {
+        console.warn('Failed to persist assessment server-side:', e?.message || e);
+      }
+
       console.log('Analysis Complete and Results Stored');
       console.log('Stored Data:', resultData);
       
