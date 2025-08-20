@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '@/services/api';
+import Navbar from '@/components/Navbar';
 
 const Metric = ({ label, value }) => (
   <div className="p-4 rounded-lg bg-muted/40 border">
@@ -94,6 +95,7 @@ const TryoutsSummary = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
       <div className="container mx-auto px-4 pt-28 pb-20 max-w-6xl">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-foreground">Tryouts Summary</h1>

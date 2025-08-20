@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
 import { User, LogOut, LogIn, UserPlus } from 'lucide-react';
@@ -39,47 +39,89 @@ const Navbar = () => {
         
         <nav className="hidden md:flex items-center space-x-8">
           {!isAuthenticated && (
-            <Link 
-              to="/" 
-              className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
+            <NavLink
+              to="/"
+              className={({ isActive }) =>
+                cn(
+                  'transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-primary after:transition-all after:duration-300',
+                  isActive
+                    ? 'text-primary after:w-full'
+                    : 'text-foreground/80 hover:text-primary after:w-0 hover:after:w-full'
+                )
+              }
             >
               Home
-            </Link>
+            </NavLink>
           )}
           {!isAuthenticated && (
-            <Link 
-              to="/test" 
-              className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
+            <NavLink
+              to="/test"
+              className={({ isActive }) =>
+                cn(
+                  'transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-primary after:transition-all after:duration-300',
+                  isActive
+                    ? 'text-primary after:w-full'
+                    : 'text-foreground/80 hover:text-primary after:w-0 hover:after:w-full'
+                )
+              }
             >
               Take Test
-            </Link>
+            </NavLink>
           )}
           {isAuthenticated && (
             <>
-              <Link
+              <NavLink
                 to="/dashboard"
-                className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
+                className={({ isActive }) =>
+                  cn(
+                    'transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-primary after:transition-all after:duration-300',
+                    isActive
+                      ? 'text-primary after:w-full'
+                      : 'text-foreground/80 hover:text-primary after:w-0 hover:after:w-full'
+                  )
+                }
               >
                 Dashboard
-              </Link>
-              <Link
+              </NavLink>
+              <NavLink
                 to="/skill-gap/list"
-                className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
+                className={({ isActive }) =>
+                  cn(
+                    'transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-primary after:transition-all after:duration-300',
+                    isActive
+                      ? 'text-primary after:w-full'
+                      : 'text-foreground/80 hover:text-primary after:w-0 hover:after:w-full'
+                  )
+                }
               >
                 Skill Gap List
-              </Link>
-              <Link
+              </NavLink>
+              <NavLink
                 to="/tryouts"
-                className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
+                className={({ isActive }) =>
+                  cn(
+                    'transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-primary after:transition-all after:duration-300',
+                    isActive
+                      ? 'text-primary after:w-full'
+                      : 'text-foreground/80 hover:text-primary after:w-0 hover:after:w-full'
+                  )
+                }
               >
                 Tryouts
-              </Link>
-              <Link 
-                to="/test" 
-                className="text-foreground/80 hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 hover:after:w-full after:bg-primary after:transition-all after:duration-300"
+              </NavLink>
+              <NavLink
+                to="/test"
+                className={({ isActive }) =>
+                  cn(
+                    'transition-colors relative after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-primary after:transition-all after:duration-300',
+                    isActive
+                      ? 'text-primary after:w-full'
+                      : 'text-foreground/80 hover:text-primary after:w-0 hover:after:w-full'
+                  )
+                }
               >
                 Take Test
-              </Link>
+              </NavLink>
             </>
           )}
         </nav>

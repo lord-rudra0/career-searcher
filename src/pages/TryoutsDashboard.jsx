@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '@/services/api';
+import Navbar from '@/components/Navbar';
 
 const TryoutsDashboard = () => {
   const navigate = useNavigate();
@@ -56,6 +57,7 @@ const TryoutsDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
       <div className="container mx-auto px-4 pt-28 pb-20 max-w-3xl">
         <h1 className="text-3xl font-bold text-foreground mb-6">Career A/B Tryouts</h1>
         <p className="text-muted-foreground mb-8">Trial two career paths for a week with daily micro-tasks and compare fit.</p>
