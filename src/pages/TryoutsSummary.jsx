@@ -134,6 +134,21 @@ const TryoutsSummary = () => {
     return { A, B };
   }, [data]);
 
+  // Must be before any early returns to keep hooks order stable
+  const recommendation = useMemo(() => {
+    if (!summary || !data) return null;
+    const { pathA, pathB } = data;
+    const aFit = Math.round((summary?.A?.fitScore || 0));
+    const bFit = Math.round((summary?.B?.fitScore || 0));
+    const aComp = Math.round((summary?.A?.completionRate || 0) * 100);
+    const bComp = Math.round((summary?.B?.completionRate || 0) * 100);
+    if (aFit === 0 && bFit === 0) return null;
+    const winner = (aFit + aComp/10) >= (bFit + bComp/10)
+      ? { key:'A', title: pathA, fit:aFit, comp:aComp }
+      : { key:'B', title: pathB, fit:bFit, comp:bComp };
+    return { winner };
+  }, [summary, data]);
+
   const logHandler = (key, taskId) => async (payload) => {
     await api.logTask({ id, key, taskId, payload });
     await refresh();
@@ -176,16 +191,6 @@ const TryoutsSummary = () => {
   if (!data) return <div className="min-h-screen grid place-items-center"><div className="text-muted-foreground">Not found</div></div>;
 
   const { pathA, pathB, durationDays, tasks } = data;
-
-  const recommendation = useMemo(() => {
-    const aFit = Math.round((summary?.A?.fitScore || 0));
-    const bFit = Math.round((summary?.B?.fitScore || 0));
-    const aComp = Math.round((summary?.A?.completionRate || 0) * 100);
-    const bComp = Math.round((summary?.B?.completionRate || 0) * 100);
-    if (aFit === 0 && bFit === 0) return null;
-    const winner = (aFit + aComp/10) >= (bFit + bComp/10) ? { key:'A', title: pathA, fit:aFit, comp:aComp } : { key:'B', title: pathB, fit:bFit, comp:bComp };
-    return { winner };
-  }, [summary, pathA, pathB]);
 
   return (
     <div className="min-h-screen bg-background">
