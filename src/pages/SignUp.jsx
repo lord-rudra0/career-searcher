@@ -99,8 +99,8 @@ const SignUp = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="pt-32 pb-20">
-        <div className="container mx-auto px-6 md:px-8 max-w-md">
+      <div className="pt-32 pb-20 flex items-center justify-center">
+        <div className="container mx-auto px-6 md:px-8 max-w-4xl">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">Create Your Account</h1>
             <p className="text-foreground/70">Discover your perfect career path</p>
@@ -114,69 +114,70 @@ const SignUp = () => {
             
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Your username" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="your@email.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="******" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="groupType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Group Type</FormLabel>
-                      <FormControl>
-                        <select className="w-full border rounded-md h-10 px-3" {...field}>
-                          <option>Class 9-10</option>
-                          <option>Class 11-12</option>
-                          <option>UnderGraduate Student</option>
-                          <option>PostGraduate</option>
-                        </select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your username" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="your@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="******" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="groupType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Group Type</FormLabel>
+                        <FormControl>
+                          <select className="w-full border rounded-md h-10 px-3" {...field}>
+                            <option>Class 9-10</option>
+                            <option>Class 11-12</option>
+                            <option>UnderGraduate Student</option>
+                            <option>PostGraduate</option>
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 {/* Academic Preferences */}
                 <div>
                   <h3 className="text-sm font-semibold mb-2">Academic Preferences (optional)</h3>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="stream"
@@ -225,7 +226,7 @@ const SignUp = () => {
 
                 <div>
                   <h3 className="text-sm font-semibold mb-2">Job Location (optional)</h3>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="jobCountry"
@@ -270,7 +271,7 @@ const SignUp = () => {
 
                 <div>
                   <h3 className="text-sm font-semibold mb-2">Study Location (optional)</h3>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="studyCountry"
