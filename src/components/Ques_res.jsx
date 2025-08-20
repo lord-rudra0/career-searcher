@@ -26,6 +26,7 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import SkillGapPanel from './SkillGapPanel';
+import ResultsSnapshot from './ResultsSnapshot';
 
 function App() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -672,6 +673,12 @@ function App() {
                 </button>
               </div>
             </div>
+
+            {/* Results Snapshot: Radar + Heatmap */}
+            <div className="max-w-5xl mx-auto mb-10 animate-slide-up">
+              <ResultsSnapshot careers={careerResults} />
+            </div>
+
             <CareerSection 
               title="AI-Generated Career Recommendations" 
               careers={careerResults} 

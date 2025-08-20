@@ -308,6 +308,12 @@ def analyze_answers():
                 "title": "Career Title",
                 "match": match_percentage,
                 "description": "Why this career matches",
+                "scores": {{
+                  "logic": 0-100,
+                  "creativity": 0-100,
+                  "social": 0-100,
+                  "organization": 0-100
+                }},
                 "roadmap": [
                     "Entry Level: Required skills and certifications",
                     "Mid Level: Advanced skills and experience",
@@ -325,10 +331,11 @@ def analyze_answers():
         ]
         Include 3-4 top colleges/universities for each career.
         Each match_percentage should be between 75-100.
+        The "scores" must reflect the user's strengths inferred from the analysis and sum is not required; each is an independent 0-100 rating.
         """
 
         schema_hint = (
-            "Return ONLY a JSON array of 5 objects with keys: 'title' (string), 'match' (number 75-100), 'description' (string),\n"
+            "Return ONLY a JSON array of 5 objects with keys: 'title' (string), 'match' (number 75-100), 'description' (string), 'scores' (object with keys 'logic','creativity','social','organization' each 0-100),\n"
             "'roadmap' (array of 3 strings: Entry Level, Mid Level, Senior Level), 'colleges' (array of 3-4 objects with 'name', 'program', 'duration', 'location').\n"
             f"Base your recommendations strictly on this analysis for '{group_name}':\n{detailed_analysis}"
         )
