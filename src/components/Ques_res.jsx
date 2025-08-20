@@ -543,6 +543,19 @@ function App() {
         {!careerResults && currentQuestionIndex < allQuestions.length && (
           <div className="max-w-2xl mx-auto">
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transform transition-all duration-300 hover:shadow-2xl animate-float">
+              {/* Progress bar */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+                  <span>Progress</span>
+                  <span>{answers.length} / {MAX_QUESTIONS}</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className="bg-primary h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((answers.length / MAX_QUESTIONS) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
               <div className="flex items-center space-x-2 mb-6">
                 <Target className="w-6 h-6 text-indigo-500 animate-pulse" />
                 <h2 className="text-2xl font-bold text-gray-800">
@@ -604,19 +617,24 @@ function App() {
         )}
 
         {isAnalyzing && (
-          <div className="text-center py-20 animate-fade-in">
-            <div className="relative w-20 h-20 mx-auto mb-4">
-              <Compass className="w-20 h-20 text-primary animate-spin-slow" />
-              <Zap className="w-8 h-8 text-accent absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
+            <div className="bg-card rounded-2xl shadow-xl p-8 max-w-md w-full mx-4 text-center border">
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <Compass className="w-24 h-24 text-primary animate-spin-slow" />
+                <Zap className="w-9 h-9 text-accent absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground">Analyzing your responses</h3>
+              <p className="mt-2 text-sm text-muted-foreground">This may take up to ~2 minutes. Please keep this tab open.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Elapsed: {elapsedSec}s</p>
+              <div className="mt-6">
+                <button
+                  onClick={handleCancelAnalysis}
+                  className="inline-flex items-center px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg shadow-sm"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-            <p className="mt-2 text-lg text-foreground/80">Analyzing your responses... This may take up to ~2 minutes.</p>
-            <p className="mt-1 text-sm text-muted-foreground">Elapsed: {elapsedSec}s</p>
-            <button
-              onClick={handleCancelAnalysis}
-              className="mt-4 inline-flex items-center px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg shadow-sm"
-            >
-              Cancel
-            </button>
           </div>
         )}
 
