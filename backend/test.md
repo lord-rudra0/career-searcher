@@ -36,8 +36,6 @@ Ques_res.jsx
 Job/Internship Alerts endpoint + simple UI in profile/overview.
 Resume Builder page that converts analysis to bullets and exports PDF.
 
-can you explain more about Career “A/B” Tryouts: Let users trial two paths for a week with tailored micro‑tasks and compare fit.
-Integrations: LinkedIn/GitHub import, Coursera/edX APIs, job boards (Indeed/LinkedIn API).
 
 
 

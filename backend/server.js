@@ -58,6 +58,7 @@ app.use('/api/auth', authRoutes);
 // Protected route example
 app.get('/api/profile', verifyToken, (req, res) => {
   res.json({ message: 'Protected route accessed successfully', user: req.user });
+});
 
 // ----- Tryouts (A/B) Endpoints -----
 // In-memory store for prototype purposes only
@@ -160,7 +161,6 @@ app.get('/tryouts/:id/summary', verifyToken, async (req, res) => {
   if (!item) return res.status(404).json({ error: 'Not found' });
   if (item.userId && String(item.userId) !== String(req.user.id)) return res.status(403).json({ error: 'Forbidden' });
   res.json({ summary: item.summary || { A: computeSideSummary(item.tasks.A), B: computeSideSummary(item.tasks.B) } });
-});
 });
 
 // ----- Journey Progress Endpoints -----
