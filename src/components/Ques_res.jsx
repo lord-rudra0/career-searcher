@@ -40,7 +40,7 @@ function App() {
   const [showLoader, setShowLoader] = useState(false);
   const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
   // Total target questions: predefined + AI-generated
-  const MAX_QUESTIONS = 20;
+  const MAX_QUESTIONS = 25;
   const [webSearchResults, setWebSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [webCareerResults, setWebCareerResults] = useState(null);
@@ -54,6 +54,7 @@ function App() {
   const [groupName, setGroupName] = useState(null);
   const [predefinedCount, setPredefinedCount] = useState(0);
   const MAX_AI_QUESTIONS = 10;
+  const TARGET_TOTAL = (predefinedCount || 0) + MAX_AI_QUESTIONS;
   // Analysis control
   const [elapsedSec, setElapsedSec] = useState(0);
   const controllerRef = useRef(null);
@@ -553,12 +554,12 @@ function App() {
               <div className="mb-6">
                 <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
                   <span>Progress</span>
-                  <span>{answers.length} / {MAX_QUESTIONS}</span>
+                  <span>{answers.length} / {TARGET_TOTAL}</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
                   <div
                     className="bg-primary h-2.5 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.min((answers.length / MAX_QUESTIONS) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((answers.length / TARGET_TOTAL) * 100, 100)}%` }}
                   />
                 </div>
               </div>
@@ -608,7 +609,7 @@ function App() {
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       {isGeneratingQuestion ? 'Generating...' : 'Loading...'}
                     </>
-                  ) : currentQuestionIndex < MAX_QUESTIONS - 1 ? (
+                  ) : answers.length < TARGET_TOTAL - 1 ? (
                     <>
                       Next
                       <ChevronRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
