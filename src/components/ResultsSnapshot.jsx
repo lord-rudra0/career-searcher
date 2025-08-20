@@ -46,15 +46,23 @@ const aggregateStrengths = (careers, topK = 4) => {
   };
 };
 
-export default function ResultsSnapshot({ careers }) {
+export default function ResultsSnapshot({ careers, labels }) {
+  // Allow overriding display labels for traits (e.g., Technical, Creative, Communication, Management)
+  const traitLabels = {
+    logic: labels?.logic || 'Logic',
+    creativity: labels?.creativity || 'Creativity',
+    social: labels?.social || 'Social',
+    organization: labels?.organization || 'Organization',
+  };
+
   const strengths = useMemo(() => aggregateStrengths(careers, 4), [careers]);
 
   const radarData = useMemo(() => ([
-    { trait: 'Logic', value: strengths.logic },
-    { trait: 'Creativity', value: strengths.creativity },
-    { trait: 'Social', value: strengths.social },
-    { trait: 'Organization', value: strengths.organization },
-  ]), [strengths]);
+    { trait: traitLabels.logic, value: strengths.logic },
+    { trait: traitLabels.creativity, value: strengths.creativity },
+    { trait: traitLabels.social, value: strengths.social },
+    { trait: traitLabels.organization, value: strengths.organization },
+  ]), [strengths, traitLabels.logic, traitLabels.creativity, traitLabels.social, traitLabels.organization]);
 
   const topCareers = useMemo(() => (Array.isArray(careers) ? careers.slice(0, 4) : []), [careers]);
 
@@ -71,9 +79,9 @@ export default function ResultsSnapshot({ careers }) {
         <h3 className="text-lg font-semibold text-foreground mb-1">Your Career Snapshot</h3>
         <p className="text-sm text-muted-foreground mb-4">Here is your strengths snapshot based on your results.</p>
         <div className="flex gap-2 mb-4 text-xs">
-          <span className="px-2 py-1 rounded-full bg-muted text-foreground/80">Social</span>
-          <span className="px-2 py-1 rounded-full bg-muted text-foreground/80">Creativity</span>
-          <span className="px-2 py-1 rounded-full bg-muted text-foreground/80">Logic</span>
+          <span className="px-2 py-1 rounded-full bg-muted text-foreground/80">{traitLabels.social}</span>
+          <span className="px-2 py-1 rounded-full bg-muted text-foreground/80">{traitLabels.creativity}</span>
+          <span className="px-2 py-1 rounded-full bg-muted text-foreground/80">{traitLabels.logic}</span>
         </div>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -95,10 +103,10 @@ export default function ResultsSnapshot({ careers }) {
             <thead>
               <tr className="text-left text-muted-foreground">
                 <th className="py-2 pr-3 font-medium">Career</th>
-                <th className="py-2 px-2 font-medium">Logic</th>
-                <th className="py-2 px-2 font-medium">Creativity</th>
-                <th className="py-2 px-2 font-medium">Social</th>
-                <th className="py-2 px-2 font-medium">Organization</th>
+                <th className="py-2 px-2 font-medium">{traitLabels.logic}</th>
+                <th className="py-2 px-2 font-medium">{traitLabels.creativity}</th>
+                <th className="py-2 px-2 font-medium">{traitLabels.social}</th>
+                <th className="py-2 px-2 font-medium">{traitLabels.organization}</th>
               </tr>
             </thead>
             <tbody>

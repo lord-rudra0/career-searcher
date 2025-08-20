@@ -676,7 +676,15 @@ function App() {
 
             {/* Results Snapshot: Radar + Heatmap */}
             <div className="max-w-5xl mx-auto mb-10 animate-slide-up">
-              <ResultsSnapshot careers={careerResults} />
+              <ResultsSnapshot
+                careers={careerResults}
+                labels={{
+                  logic: 'Technical',
+                  creativity: 'Creative',
+                  social: 'Communication',
+                  organization: 'Management',
+                }}
+              />
             </div>
 
             <CareerSection 
