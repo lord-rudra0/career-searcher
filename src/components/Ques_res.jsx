@@ -52,6 +52,8 @@ function App() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [groupName, setGroupName] = useState(null);
+  const [predefinedCount, setPredefinedCount] = useState(0);
+  const MAX_AI_QUESTIONS = 10;
   // Analysis control
   const [elapsedSec, setElapsedSec] = useState(0);
   const controllerRef = useRef(null);
@@ -183,6 +185,7 @@ function App() {
       }
     }
     setAllQuestions(selectedQuestions);
+    setPredefinedCount(selectedQuestions.length || 0);
     setGroupName(currentGroupName);
   }, [searchParams, user]);
 
@@ -264,9 +267,10 @@ function App() {
 
       // Generate AI question after predefined questions are finished
       if (currentQuestionIndex >= allQuestions.length - 1) {
-        if (updatedAnswers.length < MAX_QUESTIONS) {
+        const targetTotal = predefinedCount + MAX_AI_QUESTIONS;
+        if (updatedAnswers.length < targetTotal) {
           console.log('\nStarting AI Question Generation');
-          console.log('Predefined Questions Completed:', allQuestions.length);
+          console.log('Predefined Questions Completed:', predefinedCount);
           console.log('Current Total Answers:', updatedAnswers.length);
 
           setIsGeneratingQuestion(true);
@@ -280,7 +284,7 @@ function App() {
           setCurrentAnswer('');
           return; // avoid running the below navigation logic in the same tick
         } else {
-          console.log('\nMaximum AI questions reached, proceeding to analysis');
+          console.log('\nReached total of', targetTotal, 'answers. Proceeding to analysis');
           handleFinish(updatedAnswers);
           return;
         }
@@ -460,10 +464,11 @@ function App() {
 
   // Update the progress display in the header
   const getProgressText = () => {
-    if (currentQuestionIndex < questionsData.predefinedQuestions.length) {
-      return `Predefined Question ${currentQuestionIndex + 1} of 10`;
+    if (currentQuestionIndex < predefinedCount) {
+      return `Predefined Question ${currentQuestionIndex + 1} of ${predefinedCount}`;
     } else {
-      return `AI Question ${currentQuestionIndex - 9} of 10`;
+      const aiIndex = currentQuestionIndex - predefinedCount + 1;
+      return `AI Question ${aiIndex} of ${MAX_AI_QUESTIONS}`;
     }
   };
 

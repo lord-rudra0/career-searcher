@@ -111,6 +111,62 @@
           "Business and self-improvement"
         ]
       }
+      ,
+      {
+        "id": 11,
+        "question": "What future dream excites you most right now?",
+        "type": "mcq",
+        "options": [
+          "Inventing a new gadget or app",
+          "Publishing a book or creating art",
+          "Helping people as a doctor/teacher",
+          "Starting a small business"
+        ]
+      },
+      {
+        "id": 12,
+        "question": "Which club would you pick if starting one at school?",
+        "type": "mcq",
+        "options": [
+          "Robotics/Science club",
+          "Art/Drama club",
+          "Debate/Community club",
+          "Entrepreneurship club"
+        ]
+      },
+      {
+        "id": 13,
+        "question": "What kind of problems do you want to solve in the future?",
+        "type": "mcq",
+        "options": [
+          "Technology challenges",
+          "Creative storytelling and media",
+          "Health/Education issues",
+          "Business and money-related problems"
+        ]
+      },
+      {
+        "id": 14,
+        "question": "Which task sounds most fun for a school fair?",
+        "type": "mcq",
+        "options": [
+          "Build a working model",
+          "Design posters and videos",
+          "Host and guide visitors",
+          "Plan stalls and manage money"
+        ]
+      },
+      {
+        "id": 15,
+        "question": "How do you imagine your ideal school project team role?",
+        "type": "mcq",
+        "options": [
+          "Lead the technical build",
+          "Create visuals and content",
+          "Coordinate people and present",
+          "Organize tasks and budget"
+        ]
+      }
     ],
     "2": [
       {
@@ -221,6 +277,62 @@
           "The challenge of solving complex problems",
           "The potential for real-world application and impact",
           "Recognition and opportunities for future success"
+        ]
+      }
+      ,
+      {
+        "id": 11,
+        "question": "Which entrance/aptitude focus aligns with your plans?",
+        "type": "mcq",
+        "options": [
+          "STEM competitive prep (JEE/NEET/CS)",
+          "Design/Arts aptitude (NID/NIFT/Media)",
+          "Commerce/Management (CA/CLAT/BBA)",
+          "Liberal studies/General aptitude"
+        ]
+      },
+      {
+        "id": 12,
+        "question": "What kind of portfolio would you like to build this year?",
+        "type": "mcq",
+        "options": [
+          "Coding projects or research summaries",
+          "Design artworks or writing samples",
+          "Business case studies or competitions",
+          "Community service and leadership records"
+        ]
+      },
+      {
+        "id": 13,
+        "question": "Which internship/experience would help your goal most?",
+        "type": "mcq",
+        "options": [
+          "Tech lab or coding internship",
+          "Studio/Media/Content internship",
+          "Startup/Finance internship",
+          "NGO/Teaching/Community project"
+        ]
+      },
+      {
+        "id": 14,
+        "question": "What study environment will you optimize for this year?",
+        "type": "mcq",
+        "options": [
+          "Structured problem sets and mocks",
+          "Creative sprints and critiques",
+          "Group discussions and presentations",
+          "Project-based, real-world tasks"
+        ]
+      },
+      {
+        "id": 15,
+        "question": "Your preferred future impact sounds closest to…",
+        "type": "mcq",
+        "options": [
+          "Innovate tech used by millions",
+          "Inspire through design/media",
+          "Build/lead organizations",
+          "Improve education/health access"
         ]
       }
     ],
@@ -335,6 +447,62 @@
           "Intellectual challenge and contribution to knowledge"
         ]
       }
+      ,
+      {
+        "id": 11,
+        "question": "Which outcome best defines success by graduation?",
+        "type": "mcq",
+        "options": [
+          "Offer from a top tech/company",
+          "Published portfolio or notable projects",
+          "Pre-MBA/Business track readiness",
+          "Research paper or lab contribution"
+        ]
+      },
+      {
+        "id": 12,
+        "question": "What complementary skill will you double down on?",
+        "type": "mcq",
+        "options": [
+          "Data/AI foundations",
+          "Visual communication/UI-UX",
+          "Finance/strategy basics",
+          "Scientific writing/statistics"
+        ]
+      },
+      {
+        "id": 13,
+        "question": "Choose the experience that boosts your profile most now:",
+        "type": "mcq",
+        "options": [
+          "Hackathons or open-source",
+          "Creative showcase/competitions",
+          "Case competitions/incubators",
+          "Assistantship or lab placements"
+        ]
+      },
+      {
+        "id": 14,
+        "question": "Preferred work culture after graduation:",
+        "type": "mcq",
+        "options": [
+          "Product-driven engineering teams",
+          "Creative studios/indie teams",
+          "Consulting/fast-paced biz teams",
+          "Research-first labs/universities"
+        ]
+      },
+      {
+        "id": 15,
+        "question": "Which credential will you target next year?",
+        "type": "mcq",
+        "options": [
+          "Technical certification (e.g., AWS, Azure)",
+          "Design/marketing cert (e.g., Figma, Google)",
+          "Business/finance cert (e.g., CFA L1)",
+          "Research grant/scholarship"
+        ]
+      }
     ],
     "4": [
       {
@@ -445,6 +613,62 @@
           "Contributing to human knowledge and understanding",
           "Developing sustainable business solutions",
           "Improving human health and well-being"
+        ]
+      }
+      ,
+      {
+        "id": 11,
+        "question": "What is your immediate next milestone?",
+        "type": "mcq",
+        "options": [
+          "Publish in a peer-reviewed venue",
+          "Exhibit/ship a creative/industry project",
+          "File a patent/start a venture",
+          "Initiate/advance a clinical study"
+        ]
+      },
+      {
+        "id": 12,
+        "question": "Which collaboration will accelerate your path most?",
+        "type": "mcq",
+        "options": [
+          "Cross-lab technical collaboration",
+          "Industry/creative studio partnership",
+          "Corporate/market pilot or accelerator",
+          "Hospital/public health partnership"
+        ]
+      },
+      {
+        "id": 13,
+        "question": "Your preferred research-to-impact route:",
+        "type": "mcq",
+        "options": [
+          "Open-source/prototypes",
+          "Showcase/creative dissemination",
+          "Go-to-market and funding",
+          "Clinical validation and policy"
+        ]
+      },
+      {
+        "id": 14,
+        "question": "What constraint shapes your next 12 months most?",
+        "type": "mcq",
+        "options": [
+          "Compute/data access",
+          "Talent/collaboration access",
+          "Capital/market access",
+          "Participants/regulatory access"
+        ]
+      },
+      {
+        "id": 15,
+        "question": "Which dissemination metric will you prioritize?",
+        "type": "mcq",
+        "options": [
+          "Citations/code usage",
+          "Creative reach/engagement",
+          "Revenue/partnerships",
+          "Clinical outcomes/policy cites"
         ]
       }
     ]
