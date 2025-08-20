@@ -144,6 +144,15 @@ const api = {
     const res = await axiosInstance.get('/user/analysis-results', { params: { limit } });
     return res.data;
   },
+  // Full analysis (new)
+  getUserFullAnalysisResults: async (limit = 10) => {
+    const res = await axiosInstance.get('/user/full-analysis-results', { params: { limit } });
+    return res.data; // { results: [{ _id, groupName, answersCount, durationMs, createdAt }] }
+  },
+  getFullAnalysisById: async (id) => {
+    const res = await axiosInstance.get(`/full-analysis-results/${id}`);
+    return res.data; // full document including response payload
+  },
   getJourneyProgress: async () => {
     const res = await axiosInstance.get('/user/journey-progress');
     return res.data; // { progress }

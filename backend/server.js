@@ -10,6 +10,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const User = require("./models/User.js");
 const Tryout = require('./models/Tryout.js');
 const AnalysisResult = require('./models/AnalysisResult.js');
+const FullAnalysisResult = require('./models/FullAnalysisResult.js');
 const SkillGapResult = require('./models/SkillGapResult.js');
 const dotenv = require('dotenv');
 // const cors = require('cors');
@@ -264,6 +265,36 @@ app.get('/user/analysis-results', verifyToken, async (req, res) => {
     } catch (err) {
         console.error('Failed to fetch user analysis results:', err.message);
         res.status(500).json({ error: 'Failed to fetch user analysis results' });
+    }
+});
+
+// Fetch current user's full analysis results (requires auth)
+app.get('/user/full-analysis-results', verifyToken, async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit || '10', 10), 50);
+        const results = await FullAnalysisResult.find({ userId: req.user.id })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .select('_id groupName answersCount durationMs createdAt')
+            .lean();
+        res.json({ results });
+    } catch (err) {
+        console.error('Failed to fetch full analysis results:', err.message);
+        res.status(500).json({ error: 'Failed to fetch full analysis results' });
+    }
+});
+
+// Fetch a specific full analysis (must be owner)
+app.get('/full-analysis-results/:id', verifyToken, async (req, res) => {
+    try {
+        const doc = await FullAnalysisResult.findById(req.params.id).lean();
+        if (!doc) return res.status(404).json({ error: 'Not found' });
+        if (!doc.userId || String(doc.userId) !== String(req.user.id)) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        res.json(doc);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch full analysis' });
     }
 });
 
@@ -769,6 +800,22 @@ app.post('/analyze-answers', async (req, res) => {
                     pdfCareers: minify(pdf),
                     inputHash,
                 });
+
+                // Persist full analysis payload as well
+                try {
+                    await FullAnalysisResult.create({
+                        userId: userId || undefined,
+                        groupName,
+                        preferences: mergedPayload?.preferences || {},
+                        finalAnswers: Array.isArray(finalAnswers) ? finalAnswers : [],
+                        response: response.data,
+                        answersCount: Array.isArray(finalAnswers) ? finalAnswers.length : 0,
+                        durationMs: elapsed,
+                        inputHash,
+                    });
+                } catch (fullErr) {
+                    console.error('Persist full analysis failed:', fullErr.message);
+                }
             } catch (persistErr) {
                 console.error('Persist minimal analysis failed:', persistErr.message);
             }
