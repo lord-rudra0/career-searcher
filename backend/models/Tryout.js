@@ -36,7 +36,10 @@ const TryoutSchema = new mongoose.Schema({
   summary: {
     A: { type: SideSummarySchema, default: () => ({}) },
     B: { type: SideSummarySchema, default: () => ({}) }
-  }
+  },
+  reminderEnabled: { type: Boolean, default: false },
+  streakCount: { type: Number, default: 0 },
+  lastLogDate: { type: Date, default: null }
 });
 
 module.exports = mongoose.model('Tryout', TryoutSchema);

@@ -22,7 +22,9 @@
     "mongoose": "^8.2.2",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
-    "sonner": "^2.0.1"
+    "sonner": "^2.0.1",
+    "web-push": "^3.6.6",
+    "node-cron": "^3.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

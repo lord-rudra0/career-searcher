@@ -12,7 +12,13 @@ const Tryout = require('./models/Tryout.js');
 const AnalysisResult = require('./models/AnalysisResult.js');
 const FullAnalysisResult = require('./models/FullAnalysisResult.js');
 const SkillGapResult = require('./models/SkillGapResult.js');
+const TaskTemplate = require('./models/TaskTemplate.js');
+const PushSubscription = require('./models/PushSubscription.js');
 const dotenv = require('dotenv');
+// Optional deps (install required): web-push, node-cron
+let webpush, cron;
+try { webpush = require('web-push'); } catch { webpush = null; }
+try { cron = require('node-cron'); } catch { cron = null; }
 // const cors = require('cors');
 const jwt = require('jsonwebtoken'); // Import jsonwebtoken
 const { verifyToken } = require('./middleware/auth');
@@ -87,6 +93,51 @@ function generateTasksForPath(careerTitle, durationDays) {
       evidence: []
     });
   }
+
+// ----- Web Push Setup -----
+const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || '';
+const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || '';
+if (webpush && VAPID_PUBLIC && VAPID_PRIVATE) {
+  try {
+    webpush.setVapidDetails('mailto:admin@example.com', VAPID_PUBLIC, VAPID_PRIVATE);
+  } catch (e) {
+    console.warn('web-push VAPID setup failed:', e.message);
+  }
+}
+
+app.get('/push/public-key', (req, res) => {
+  res.json({ publicKey: VAPID_PUBLIC || '' });
+});
+
+app.post('/push/subscribe', verifyToken, async (req, res) => {
+  try {
+    const sub = req.body?.subscription;
+    if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth) {
+      return res.status(400).json({ error: 'Invalid subscription' });
+    }
+    await PushSubscription.updateOne(
+      { endpoint: sub.endpoint },
+      { userId: req.user.id, endpoint: sub.endpoint, keys: sub.keys },
+      { upsert: true }
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Subscribe failed:', e.message);
+    res.status(500).json({ error: 'Failed to save subscription' });
+  }
+});
+
+app.post('/push/unsubscribe', verifyToken, async (req, res) => {
+  try {
+    const endpoint = req.body?.endpoint;
+    if (!endpoint) return res.status(400).json({ error: 'endpoint required' });
+    await PushSubscription.deleteOne({ endpoint, userId: req.user.id });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('Unsubscribe failed:', e.message);
+    res.status(500).json({ error: 'Failed to unsubscribe' });
+  }
+});
   return arr;
 }
 
@@ -163,6 +214,50 @@ app.get('/tryouts/:id', verifyToken, async (req, res) => {
   }
 });
 
+// Edit tryout: allow updating pathA/pathB/durationDays and reminderEnabled
+app.patch('/tryouts/:id', verifyToken, async (req, res) => {
+  try {
+    const { pathA, pathB, durationDays, reminderEnabled } = req.body || {};
+    const doc = await Tryout.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!doc) return res.status(404).json({ error: 'Not found' });
+    let tasksRegenerated = false;
+    if (typeof pathA === 'string' && pathA.trim() && pathA !== doc.pathA) {
+      doc.pathA = pathA.trim();
+      doc.tasks.A = generateTasksForPath(doc.pathA, doc.durationDays);
+      tasksRegenerated = true;
+    }
+    if (typeof pathB === 'string' && pathB.trim() && pathB !== doc.pathB) {
+      doc.pathB = pathB.trim();
+      doc.tasks.B = generateTasksForPath(doc.pathB, doc.durationDays);
+      tasksRegenerated = true;
+    }
+    if (typeof durationDays !== 'undefined') {
+      const dur = Math.max(3, Math.min(14, Number(durationDays) || doc.durationDays));
+      if (dur !== doc.durationDays) {
+        doc.durationDays = dur;
+        // re-shape tasks lengths to new duration
+        doc.tasks.A = generateTasksForPath(doc.pathA, dur);
+        doc.tasks.B = generateTasksForPath(doc.pathB, dur);
+        tasksRegenerated = true;
+      }
+    }
+    if (typeof reminderEnabled === 'boolean') {
+      doc.reminderEnabled = reminderEnabled;
+    }
+    // Recompute summary if tasks changed
+    if (tasksRegenerated) {
+      doc.summary = { A: computeSideSummary(doc.tasks.A), B: computeSideSummary(doc.tasks.B) };
+      // Reset streak if tasks regenerated (optional: keep)
+      doc.streakCount = doc.streakCount || 0;
+    }
+    await doc.save();
+    return res.json({ ok: true, tryout: { id: String(doc._id), pathA: doc.pathA, pathB: doc.pathB, durationDays: doc.durationDays, reminderEnabled: doc.reminderEnabled, streakCount: doc.streakCount } });
+  } catch (e) {
+    console.error('Edit tryout failed:', e);
+    res.status(500).json({ error: 'Failed to edit tryout' });
+  }
+});
+
 app.post('/tryouts/:id/tasks/:key/:taskId/log', verifyToken, async (req, res) => {
   const key = req.params.key === 'A' ? 'A' : 'B';
   const { timeMin = 0, interest = 0, difficulty = 0, evidence } = req.body || {};
@@ -178,6 +273,20 @@ app.post('/tryouts/:id/tasks/:key/:taskId/log', verifyToken, async (req, res) =>
   list[idx].status = 'completed';
   // Recompute summary and save
   doc.summary = { A: computeSideSummary(doc.tasks.A), B: computeSideSummary(doc.tasks.B) };
+  // Update streak
+  const today = new Date();
+  const last = doc.lastLogDate ? new Date(doc.lastLogDate) : null;
+  const daysDiff = last ? Math.floor((today.setHours(0,0,0,0) - last.setHours(0,0,0,0)) / (1000*60*60*24)) : null;
+  if (last == null) {
+    doc.streakCount = 1;
+  } else if (daysDiff === 0) {
+    // same day, keep streak
+  } else if (daysDiff === 1) {
+    doc.streakCount = (doc.streakCount || 0) + 1;
+  } else if (daysDiff > 1) {
+    doc.streakCount = 1; // reset
+  }
+  doc.lastLogDate = new Date();
   await doc.save();
   return res.json({ ok: true });
 });
@@ -186,8 +295,138 @@ app.get('/tryouts/:id/summary', verifyToken, async (req, res) => {
   const doc = await Tryout.findOne({ _id: req.params.id, userId: req.user.id }).lean();
   if (!doc) return res.status(404).json({ error: 'Not found' });
   const summary = doc.summary || { A: computeSideSummary(doc.tasks.A || []), B: computeSideSummary(doc.tasks.B || []) };
-  res.json({ summary });
+  res.json({ summary, reminderEnabled: !!doc.reminderEnabled, streakCount: doc.streakCount || 0 });
 });
+
+// Simple built-in templates for tasks by role
+const ROLE_TEMPLATES = {
+  'Frontend Developer': {
+    skills: ['HTML/CSS', 'JavaScript', 'React', 'Project'],
+    titles: [
+      (ct)=>`Build a small page with semantic HTML for ${ct}`,
+      (ct)=>`Practice JS array/map/filter with ${ct} snippets`,
+      (ct)=>`Recreate a UI component in ${ct}`,
+      (ct)=>`Ship a mini ${ct} demo and share link`
+    ]
+  },
+  'Data Analyst': {
+    skills: ['Excel', 'SQL', 'Visualization', 'Project'],
+    titles: [
+      (ct)=>`Analyze a small dataset in Excel about ${ct}`,
+      (ct)=>`Write 3 SQL queries on a public dataset related to ${ct}`,
+      (ct)=>`Create a chart about ${ct} using your tool of choice`,
+      (ct)=>`Publish a mini analysis report on ${ct}`
+    ]
+  }
+};
+
+app.get('/tryout-templates', verifyToken, async (req, res) => {
+  const role = req.query.role;
+  try {
+    if (role) {
+      const dbTpl = await TaskTemplate.findOne({ role }).lean();
+      if (dbTpl) return res.json({ role, template: { skills: dbTpl.skills, titles: dbTpl.titles.map(t=> (ct)=>t ) } });
+      if (ROLE_TEMPLATES[role]) return res.json({ role, template: ROLE_TEMPLATES[role] });
+      return res.status(404).json({ error: 'Role not found' });
+    }
+    const dbRoles = await TaskTemplate.find().select('role').lean();
+    const builtins = Object.keys(ROLE_TEMPLATES);
+    const roles = Array.from(new Set([ ...dbRoles.map(r=>r.role), ...builtins ]));
+    return res.json({ roles });
+  } catch (e) {
+    console.error('Templates fetch failed:', e.message);
+    return res.status(500).json({ error: 'Failed to fetch templates' });
+  }
+});
+
+// Upsert a template (basic adminless management)
+app.post('/tryout-templates', verifyToken, async (req, res) => {
+  try {
+    const { role, skills = [], titles = [] } = req.body || {};
+    if (!role || !Array.isArray(skills) || !Array.isArray(titles)) {
+      return res.status(400).json({ error: 'role, skills[], titles[] required' });
+    }
+    const doc = await TaskTemplate.findOneAndUpdate(
+      { role },
+      { role, skills, titles, updatedAt: new Date() },
+      { upsert: true, new: true }
+    ).lean();
+    res.json({ ok: true, template: doc });
+  } catch (e) {
+    console.error('Upsert template failed:', e.message);
+    res.status(500).json({ error: 'Failed to upsert template' });
+  }
+});
+
+// Replace tasks for a side with provided template (or regenerate default)
+app.post('/tryouts/:id/tasks/:key/replace', verifyToken, async (req, res) => {
+  const key = req.params.key === 'A' ? 'A' : 'B';
+  const { role } = req.body || {};
+  const doc = await Tryout.findOne({ _id: req.params.id, userId: req.user.id });
+  if (!doc) return res.status(404).json({ error: 'Not found' });
+  let tasks;
+  if (role) {
+    // Prefer DB template, fallback to builtin
+    const dbTpl = await TaskTemplate.findOne({ role }).lean();
+    const tpl = dbTpl ? { skills: dbTpl.skills, titles: dbTpl.titles.map(str => (()=>str)) } : ROLE_TEMPLATES[role];
+    if (!tpl) return res.status(404).json({ error: 'Template not found' });
+    tasks = [];
+    for (let d = 0; d < doc.durationDays; d++) {
+      const idx = d % (tpl.skills?.length || 1);
+      tasks.push({
+        id: `${d + 1}`,
+        day: d,
+        title: typeof tpl.titles[idx] === 'function' ? tpl.titles[idx](role) : tpl.titles[idx],
+        skillTag: tpl.skills?.[idx] || 'General',
+        status: 'pending',
+        timeMin: 0,
+        interest: 0,
+        difficulty: 0,
+        evidence: []
+      });
+    }
+  } else {
+    const career = key === 'A' ? doc.pathA : doc.pathB;
+    tasks = generateTasksForPath(career, doc.durationDays);
+  }
+  doc.tasks[key] = tasks;
+  doc.summary = { A: computeSideSummary(doc.tasks.A), B: computeSideSummary(doc.tasks.B) };
+  await doc.save();
+  return res.json({ ok: true });
+});
+
+// ----- Daily Reminder Cron (09:00 local) -----
+if (cron && webpush && VAPID_PUBLIC && VAPID_PRIVATE) {
+  try {
+    cron.schedule('0 9 * * *', async () => {
+      try {
+        const since = new Date(); since.setDate(since.getDate() - 1);
+        const tryouts = await Tryout.find({ reminderEnabled: true }).select('_id userId lastLogDate reminderEnabled').lean();
+        const users = new Set(tryouts.map(t => String(t.userId)));
+        if (!users.size) return;
+        const subs = await PushSubscription.find({ userId: { $in: Array.from(users) } }).lean();
+        await Promise.all(subs.map(async (s) => {
+          try {
+            await webpush.sendNotification({ endpoint: s.endpoint, keys: s.keys }, JSON.stringify({
+              title: 'Daily Tryout Reminder',
+              body: 'Log a micro-task today to keep your streak going!',
+              icon: '/icons/icon-192.png',
+            }));
+          } catch (e) {
+            if (e.statusCode === 410 || e.statusCode === 404) {
+              await PushSubscription.deleteOne({ endpoint: s.endpoint });
+            }
+          }
+        }));
+      } catch (e) {
+        console.error('Cron reminder failed:', e.message);
+      }
+    });
+    console.log('Daily reminder cron scheduled at 09:00');
+  } catch (e) {
+    console.warn('Cron setup failed:', e.message);
+  }
+}
 
 // ----- Journey Progress Endpoints -----
 // Get current user's journey progress

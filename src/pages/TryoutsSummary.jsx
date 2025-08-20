@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '@/services/api';
+import { subscribePush, unsubscribePush } from '@/services/push';
 import Navbar from '@/components/Navbar';
 import { Award, TrendingUp, Clock } from 'lucide-react';
 
@@ -63,12 +64,24 @@ const TryoutsSummary = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editPathA, setEditPathA] = useState('');
+  const [editPathB, setEditPathB] = useState('');
+  const [editDuration, setEditDuration] = useState(7);
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const [streakCount, setStreakCount] = useState(0);
+  const [roles, setRoles] = useState([]);
+  const [roleA, setRoleA] = useState('');
+  const [roleB, setRoleB] = useState('');
 
   const refresh = async () => {
     setLoading(true);
     try {
       const res = await api.getTryout(id);
       setData(res?.tryout || null);
+      const sum = await api.getTryoutSummary(id);
+      setReminderEnabled(!!sum.reminderEnabled);
+      setStreakCount(sum.streakCount || 0);
     } catch (err) {
       setError(err.message || 'Failed to load tryout');
     } finally {
@@ -77,6 +90,22 @@ const TryoutsSummary = () => {
   };
 
   useEffect(() => { refresh(); }, [id]);
+  useEffect(() => {
+    if (data) {
+      setEditPathA(data.pathA || '');
+      setEditPathB(data.pathB || '');
+      setEditDuration(data.durationDays || 7);
+    }
+  }, [data]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.getTryoutTemplates();
+        setRoles(res.roles || []);
+      } catch {}
+    })();
+  }, []);
 
   const summary = useMemo(() => {
     if (!data) return null;
@@ -110,6 +139,38 @@ const TryoutsSummary = () => {
     await refresh();
   };
 
+  const saveEdits = async () => {
+    setSavingEdit(true);
+    try {
+      const payload = { pathA: editPathA, pathB: editPathB, durationDays: Number(editDuration) || 7, reminderEnabled };
+      await api.updateTryout(id, payload);
+      // Manage push subscription based on reminder toggle
+      try {
+        if (reminderEnabled) {
+          await subscribePush();
+        } else {
+          await unsubscribePush();
+        }
+      } catch (e) {
+        console.warn('Push subscription change failed:', e.message);
+      }
+      await refresh();
+    } catch (e) {
+      setError(e.message || 'Failed to save edits');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const replaceTasks = async (key, role) => {
+    try {
+      await api.replaceTasksForSide(id, key, role || undefined);
+      await refresh();
+    } catch (e) {
+      setError(e.message || 'Failed to replace tasks');
+    }
+  };
+
   if (loading) return <div className="min-h-screen grid place-items-center"><div className="text-muted-foreground">Loading...</div></div>;
   if (error) return <div className="min-h-screen grid place-items-center"><div className="text-destructive">{error}</div></div>;
   if (!data) return <div className="min-h-screen grid place-items-center"><div className="text-muted-foreground">Not found</div></div>;
@@ -134,7 +195,32 @@ const TryoutsSummary = () => {
           <h1 className="text-3xl font-bold text-foreground">Tryouts Summary</h1>
           <Link to="/tryouts" className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground">New Tryout</Link>
         </div>
-        <p className="text-muted-foreground mb-6">Paths: <span className="font-medium text-foreground">{pathA}</span> vs <span className="font-medium text-foreground">{pathB}</span> • Duration: {durationDays} days</p>
+        <div className="mb-4 p-4 border rounded-xl bg-muted/30">
+          <div className="grid md:grid-cols-5 gap-3 items-end">
+            <div className="md:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">Path A</label>
+              <input value={editPathA} onChange={(e)=>setEditPathA(e.target.value)} className="w-full bg-background border rounded-lg px-2 py-1" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs text-muted-foreground mb-1">Path B</label>
+              <input value={editPathB} onChange={(e)=>setEditPathB(e.target.value)} className="w-full bg-background border rounded-lg px-2 py-1" />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Duration (days)</label>
+              <input type="number" min="3" max="14" value={editDuration} onChange={(e)=>setEditDuration(e.target.value)} className="w-full bg-background border rounded-lg px-2 py-1" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={reminderEnabled} onChange={(e)=>setReminderEnabled(e.target.checked)} />
+                Daily reminder
+              </label>
+              <span className="text-xs text-muted-foreground">Streak: <span className="font-medium text-foreground">{streakCount} day{streakCount===1?'':'s'}</span></span>
+            </div>
+            <button onClick={saveEdits} disabled={savingEdit} className={`px-4 py-2 rounded-lg text-white bg-primary hover:bg-primary/90 ${savingEdit?'opacity-60':''}`}>{savingEdit?'Saving...':'Save Changes'}</button>
+          </div>
+        </div>
 
         {summary && (
           <>
@@ -160,6 +246,17 @@ const TryoutsSummary = () => {
           {['A','B'].map((key) => (
             <div key={key} className="bg-card rounded-2xl shadow-xl p-6 border">
               <h2 className="text-xl font-semibold mb-4">Path {key}: {key==='A'?pathA:pathB}</h2>
+              <div className="flex flex-wrap items-end gap-2 mb-4">
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">Template role</label>
+                  <select className="bg-background border rounded-lg px-2 py-1" value={key==='A'?roleA:roleB} onChange={(e)=> (key==='A'?setRoleA:setRoleB)(e.target.value)}>
+                    <option value="">Select role</option>
+                    {roles.map(r => (<option key={r} value={r}>{r}</option>))}
+                  </select>
+                </div>
+                <button className="px-3 py-1.5 rounded-lg bg-secondary hover:bg-secondary/80" onClick={()=>replaceTasks(key, key==='A'?roleA:roleB)}>Apply Template</button>
+                <button className="px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80" onClick={()=>replaceTasks(key, undefined)}>Regenerate Default</button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                 <Metric label="Avg Interest" value={stats?.[key]?.avgInterest || '0.0'} />
                 <Metric label="Avg Difficulty" value={stats?.[key]?.avgDifficulty || '0.0'} />

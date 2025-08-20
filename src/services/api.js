@@ -185,13 +185,38 @@ const api = {
     const res = await axiosInstance.get(`/tryouts/${id}`);
     return res.data; // { tryout }
   },
+  updateTryout: async (id, payload) => {
+    const res = await axiosInstance.patch(`/tryouts/${id}`, payload);
+    return res.data; // { ok, tryout }
+  },
   logTask: async ({ id, key, taskId, payload }) => {
     const res = await axiosInstance.post(`/tryouts/${id}/tasks/${key}/${taskId}/log`, payload);
     return res.data; // { ok }
   },
   getTryoutSummary: async (id) => {
     const res = await axiosInstance.get(`/tryouts/${id}/summary`);
-    return res.data; // { summary }
+    return res.data; // { summary, reminderEnabled, streakCount }
+  },
+  getTryoutTemplates: async (role) => {
+    const res = await axiosInstance.get('/tryout-templates', { params: role ? { role } : {} });
+    return res.data; // { roles } or { role, template }
+  },
+  replaceTasksForSide: async (id, key, role) => {
+    const res = await axiosInstance.post(`/tryouts/${id}/tasks/${key}/replace`, role ? { role } : {});
+    return res.data; // { ok }
+  },
+  // Push notifications
+  getPushPublicKey: async () => {
+    const res = await axiosInstance.get('/push/public-key');
+    return res.data; // { publicKey }
+  },
+  savePushSubscription: async (subscription) => {
+    const res = await axiosInstance.post('/push/subscribe', { subscription });
+    return res.data; // { ok }
+  },
+  removePushSubscription: async (endpoint) => {
+    const res = await axiosInstance.post('/push/unsubscribe', { endpoint });
+    return res.data; // { ok }
   },
 };
 
