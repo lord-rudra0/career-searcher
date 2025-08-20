@@ -56,10 +56,13 @@ const SkillList = ({ title, items = [], type = 'default', enableToggle = false, 
   </div>
 );
 
-const LinkList = ({ items = [], completed = [], onToggle, onGeneratePlan, careerIndex, planLoading = {} }) => (
+const LinkList = ({ items = [], completed = [], onToggle, onGeneratePlan, careerIndex, planLoading = {}, plans = {}, activePlanCourse = {}, onSelectPlanCourse }) => (
   <ul className="list-disc list-inside space-y-2">
     {(items || []).slice(0, 20).map((c, i) => {
       const label = c.title || c.name || c.link || `course-${i}`;
+      const courseKey = label;
+      const hasPlan = !!plans?.[careerIndex]?.[courseKey];
+      const isActive = activePlanCourse?.[careerIndex] === courseKey;
       const checked = completed.includes(label);
       return (
         <li key={i} className="text-sm text-gray-700 flex items-center flex-wrap gap-2">
@@ -89,13 +92,22 @@ const LinkList = ({ items = [], completed = [], onToggle, onGeneratePlan, career
               {planLoading[careerIndex] ? 'Generating…' : 'Generate Plan'}
             </button>
           )}
+          {hasPlan && (
+            <button
+              className={`ml-1 px-2 py-0.5 text-xs rounded border ${isActive ? 'bg-green-50 border-green-300 text-green-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+              onClick={() => onSelectPlanCourse?.(careerIndex, courseKey)}
+              title="View generated plan for this course"
+            >
+              {isActive ? 'Viewing Plan' : 'View Plan'}
+            </button>
+          )}
         </li>
       );
     })}
   </ul>
 );
 
-export default function SkillGapPanel({ data, completedSkills = [], completedCourses = [], onToggle, plans = {}, onGeneratePlan, planLoading = {}, onClosePlan }) {
+export default function SkillGapPanel({ data, completedSkills = [], completedCourses = [], onToggle, plans = {}, activePlanCourse = {}, onSelectPlanCourse, onGeneratePlan, planLoading = {}, onClosePlan }) {
   if (!data) return null;
   const { userSkills = {}, careers = [] } = data;
 
@@ -165,6 +177,9 @@ export default function SkillGapPanel({ data, completedSkills = [], completedCou
               onGeneratePlan={onGeneratePlan}
               careerIndex={idx}
               planLoading={planLoading}
+              plans={plans}
+              activePlanCourse={activePlanCourse}
+              onSelectPlanCourse={onSelectPlanCourse}
             />
           </Section>
 
@@ -184,7 +199,9 @@ export default function SkillGapPanel({ data, completedSkills = [], completedCou
 
           <Section title="Next 90 Days Plan">
             {(() => {
-              const plan = plans?.[idx];
+              const careerPlans = plans?.[idx] || {};
+              const selectedKey = activePlanCourse?.[idx];
+              const plan = selectedKey ? careerPlans[selectedKey] : null;
               const renderBlock = (title, val) => (
                 <div>
                   <div className="font-medium mb-1">{title}</div>

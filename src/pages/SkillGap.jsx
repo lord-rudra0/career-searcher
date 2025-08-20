@@ -14,7 +14,8 @@ const SkillGapPage = () => {
   const [completedCourses, setCompletedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [plans, setPlans] = useState({}); // { [careerIndex]: { day0_30, day31_60, day61_90 } }
+  const [plans, setPlans] = useState({}); // { [careerIndex]: { [courseKey]: { day0_30, day31_60, day61_90 } } }
+  const [activePlanCourse, setActivePlanCourse] = useState({}); // { [careerIndex]: courseKey }
   const [planLoading, setPlanLoading] = useState({}); // { [careerIndex]: boolean }
 
   useEffect(() => {
@@ -51,7 +52,7 @@ const SkillGapPage = () => {
   }, [id, navigate]);
 
   const handleClosePlan = (careerIndex) => {
-    setPlans(prev => {
+    setActivePlanCourse(prev => {
       const next = { ...prev };
       delete next[careerIndex];
       return next;
@@ -73,6 +74,7 @@ const SkillGapPage = () => {
     try {
       setPlanLoading(prev => ({ ...prev, [careerIndex]: true }));
       const career = data?.careers?.[careerIndex];
+      const courseKey = course?.title || course?.name || course?.link || 'selected-course';
       const payload = {
         careerTitle: career?.title,
         course,
@@ -99,7 +101,14 @@ const SkillGapPage = () => {
         day31_60: toArray(pick(raw, ['day31_60','days31_60','day31-60','days31-60','31_60','31-60'])),
         day61_90: toArray(pick(raw, ['day61_90','days61_90','day61-90','days61-90','61_90','61-90'])),
       };
-      setPlans(prev => ({ ...prev, [careerIndex]: normalized }));
+      setPlans(prev => ({
+        ...prev,
+        [careerIndex]: {
+          ...(prev[careerIndex] || {}),
+          [courseKey]: normalized,
+        },
+      }));
+      setActivePlanCourse(prev => ({ ...prev, [careerIndex]: courseKey }));
     } catch (e) {
       console.error('Failed to generate plan', e);
       setError(e.message || 'Failed to generate plan');
@@ -128,6 +137,8 @@ const SkillGapPage = () => {
               completedCourses={completedCourses}
               onToggle={handleToggle}
               plans={plans}
+              activePlanCourse={activePlanCourse}
+              onSelectPlanCourse={(careerIndex, courseKey) => setActivePlanCourse(prev => ({ ...prev, [careerIndex]: courseKey }))}
               onGeneratePlan={handleGeneratePlan}
               planLoading={planLoading}
               onClosePlan={handleClosePlan}
