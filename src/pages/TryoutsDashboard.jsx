@@ -9,8 +9,9 @@ const TryoutsDashboard = () => {
   const [durationDays, setDurationDays] = useState(7);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
-  const [tryout, setTryout] = useState(null);
-  const [loadingTryout, setLoadingTryout] = useState(false);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState('');
+  const [items, setItems] = useState([]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -36,6 +37,22 @@ const TryoutsDashboard = () => {
       setCreating(false);
     }
   };
+
+  useEffect(() => {
+    const load = async () => {
+      setListLoading(true);
+      setListError('');
+      try {
+        const res = await api.listTryouts();
+        setItems(res?.tryouts || []);
+      } catch (err) {
+        setListError(err.message || 'Failed to load your tryouts');
+      } finally {
+        setListLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,9 +82,38 @@ const TryoutsDashboard = () => {
           </div>
         </form>
 
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground mb-10">
           After creation, you'll be redirected to the summary page where you can see tasks and log progress.
         </div>
+
+        <section>
+          <h2 className="text-xl font-semibold text-foreground mb-3">Your Tryouts</h2>
+          {listLoading ? (
+            <div className="text-muted-foreground">Loading...</div>
+          ) : listError ? (
+            <div className="text-destructive text-sm">{listError}</div>
+          ) : items.length === 0 ? (
+            <div className="text-muted-foreground text-sm">No tryouts yet. Create your first above.</div>
+          ) : (
+            <div className="grid gap-3">
+              {items.map(t => (
+                <div key={t.id} className="bg-card border rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-foreground">{t.pathA} vs {t.pathB}</div>
+                    <div className="text-xs text-muted-foreground">Duration: {t.durationDays} days • Created: {new Date(t.createdAt).toLocaleString()}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="hidden md:flex text-xs text-muted-foreground gap-2">
+                      <span>A fit: {Math.round(t.summary?.A?.fitScore || 0)}</span>
+                      <span>B fit: {Math.round(t.summary?.B?.fitScore || 0)}</span>
+                    </div>
+                    <Link to={`/tryouts/${t.id}/summary`} className="px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground">Open</Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

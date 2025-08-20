@@ -8,6 +8,7 @@ const passport = require('passport');
 const session = require('express-session');
 const LocalStrategy = require("passport-local").Strategy;
 const User = require("./models/User.js");
+const Tryout = require('./models/Tryout.js');
 const AnalysisResult = require('./models/AnalysisResult.js');
 const SkillGapResult = require('./models/SkillGapResult.js');
 const dotenv = require('dotenv');
@@ -61,8 +62,6 @@ app.get('/api/profile', verifyToken, (req, res) => {
 });
 
 // ----- Tryouts (A/B) Endpoints -----
-// In-memory store for prototype purposes only
-const tryouts = new Map();
 
 function generateTasksForPath(careerTitle, durationDays) {
   const skills = ['Foundations', 'Tooling', 'Problem Solving', 'Project'];
@@ -110,57 +109,83 @@ app.post('/tryouts', verifyToken, async (req, res) => {
   try {
     const { pathA, pathB, durationDays = 7 } = req.body || {};
     if (!pathA || !pathB) return res.status(400).json({ error: 'pathA and pathB are required' });
-    const id = crypto.randomUUID();
-    const t = {
-      id,
-      userId: req.user?.id,
+    const dur = Math.max(3, Math.min(14, Number(durationDays) || 7));
+    const tasksA = generateTasksForPath(pathA, dur);
+    const tasksB = generateTasksForPath(pathB, dur);
+    const summary = { A: computeSideSummary(tasksA), B: computeSideSummary(tasksB) };
+    const doc = await Tryout.create({
+      userId: req.user.id,
       pathA,
       pathB,
-      durationDays: Math.max(3, Math.min(14, Number(durationDays) || 7)),
-      createdAt: new Date().toISOString(),
-      tasks: {
-        A: generateTasksForPath(pathA, Math.max(3, Math.min(14, Number(durationDays) || 7))),
-        B: generateTasksForPath(pathB, Math.max(3, Math.min(14, Number(durationDays) || 7))),
-      },
-    };
-    t.summary = { A: computeSideSummary(t.tasks.A), B: computeSideSummary(t.tasks.B) };
-    tryouts.set(id, t);
-    res.json({ tryoutId: id });
+      durationDays: dur,
+      tasks: { A: tasksA, B: tasksB },
+      summary,
+    });
+    return res.json({ tryoutId: String(doc._id) });
   } catch (e) {
+    console.error('Create tryout failed:', e);
     res.status(500).json({ error: 'Failed to create tryout' });
   }
 });
 
+// List current user's tryouts
+app.get('/tryouts', verifyToken, async (req, res) => {
+  try {
+    const items = await Tryout.find({ userId: req.user.id })
+      .select('_id pathA pathB durationDays createdAt summary')
+      .sort({ createdAt: -1 })
+      .lean();
+    const result = items.map(t => ({
+      id: String(t._id),
+      pathA: t.pathA,
+      pathB: t.pathB,
+      durationDays: t.durationDays,
+      createdAt: t.createdAt,
+      summary: t.summary,
+    }));
+    res.json({ tryouts: result });
+  } catch (e) {
+    console.error('List tryouts failed:', e);
+    res.status(500).json({ error: 'Failed to list tryouts' });
+  }
+});
+
 app.get('/tryouts/:id', verifyToken, async (req, res) => {
-  const item = tryouts.get(req.params.id);
-  if (!item) return res.status(404).json({ error: 'Not found' });
-  if (item.userId && String(item.userId) !== String(req.user.id)) return res.status(403).json({ error: 'Forbidden' });
-  res.json({ tryout: item });
+  try {
+    const doc = await Tryout.findOne({ _id: req.params.id, userId: req.user.id }).lean();
+    if (!doc) return res.status(404).json({ error: 'Not found' });
+    // Align id shape with frontend
+    const { _id, ...rest } = doc;
+    res.json({ tryout: { id: String(_id), ...rest } });
+  } catch (e) {
+    res.status(404).json({ error: 'Not found' });
+  }
 });
 
 app.post('/tryouts/:id/tasks/:key/:taskId/log', verifyToken, async (req, res) => {
-  const item = tryouts.get(req.params.id);
-  if (!item) return res.status(404).json({ error: 'Not found' });
-  if (item.userId && String(item.userId) !== String(req.user.id)) return res.status(403).json({ error: 'Forbidden' });
   const key = req.params.key === 'A' ? 'A' : 'B';
-  const list = item.tasks[key] || [];
+  const { timeMin = 0, interest = 0, difficulty = 0, evidence } = req.body || {};
+  const doc = await Tryout.findOne({ _id: req.params.id, userId: req.user.id });
+  if (!doc) return res.status(404).json({ error: 'Not found' });
+  const list = doc.tasks?.[key] || [];
   const idx = list.findIndex(t => String(t.id) === String(req.params.taskId));
   if (idx === -1) return res.status(404).json({ error: 'Task not found' });
-  const { timeMin = 0, interest = 0, difficulty = 0, evidence } = req.body || {};
   list[idx].timeMin = Number(timeMin) || 0;
   list[idx].interest = Number(interest) || 0;
   list[idx].difficulty = Number(difficulty) || 0;
   if (evidence) list[idx].evidence = [...(list[idx].evidence || []), String(evidence)];
   list[idx].status = 'completed';
-  item.summary = { A: computeSideSummary(item.tasks.A), B: computeSideSummary(item.tasks.B) };
-  res.json({ ok: true });
+  // Recompute summary and save
+  doc.summary = { A: computeSideSummary(doc.tasks.A), B: computeSideSummary(doc.tasks.B) };
+  await doc.save();
+  return res.json({ ok: true });
 });
 
 app.get('/tryouts/:id/summary', verifyToken, async (req, res) => {
-  const item = tryouts.get(req.params.id);
-  if (!item) return res.status(404).json({ error: 'Not found' });
-  if (item.userId && String(item.userId) !== String(req.user.id)) return res.status(403).json({ error: 'Forbidden' });
-  res.json({ summary: item.summary || { A: computeSideSummary(item.tasks.A), B: computeSideSummary(item.tasks.B) } });
+  const doc = await Tryout.findOne({ _id: req.params.id, userId: req.user.id }).lean();
+  if (!doc) return res.status(404).json({ error: 'Not found' });
+  const summary = doc.summary || { A: computeSideSummary(doc.tasks.A || []), B: computeSideSummary(doc.tasks.B || []) };
+  res.json({ summary });
 });
 
 // ----- Journey Progress Endpoints -----

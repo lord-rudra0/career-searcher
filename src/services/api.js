@@ -164,6 +164,10 @@ const api = {
   },
 
   // Tryouts (A/B career trials)
+  listTryouts: async () => {
+    const res = await axiosInstance.get('/tryouts');
+    return res.data; // { tryouts }
+  },
   createTryout: async ({ pathA, pathB, durationDays = 7 }) => {
     const res = await axiosInstance.post('/tryouts', { pathA, pathB, durationDays });
     return res.data; // { tryoutId }
