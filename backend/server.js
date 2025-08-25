@@ -433,7 +433,8 @@ app.post('/tryouts/:id/tasks/:key/replace', verifyToken, async (req, res) => {
 });
 
 // ----- Daily Reminder Cron (09:00 local) -----
-if (cron && webpush && VAPID_PUBLIC && VAPID_PRIVATE) {
+// Guard against missing VAPID keys on serverless envs
+if (cron && webpush && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   try {
     cron.schedule('0 9 * * *', async () => {
       try {
