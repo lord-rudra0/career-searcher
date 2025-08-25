@@ -848,11 +848,15 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
-// Connect to MongoDB
+// Connect to MongoDB (shorter timeout to avoid serverless cold-start hangs)
 const mongoURI = process.env.MONGO_URI; // Use the MongoDB URI from the environment variable
-mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 10000, // 10s timeout for server selection (was indefinite)
+})
     .then(() => console.log("MongoDB connected for authentication"))
-    .catch(err => console.error("MongoDB connection error:", err));
+    .catch(err => console.error("MongoDB connection error:", err.message));
 
 // Secret key for JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'your_default_jwt_secret'; // Ensure this is set
