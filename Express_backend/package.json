@@ -4,8 +4,8 @@
   "description": "Express server for Career Finder AI",
   "main": "server.js",
   "scripts": {
-    "start": "node start.js",
-    "dev": "nodemon start.js --ignore 'venv/*'",
+    "start": "node server.js",
+    "dev": "nodemon server.js --ignore 'venv/*'",
     "express": "node server.js",
     "flask": "python app.py"
   },
