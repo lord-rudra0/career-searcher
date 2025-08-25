@@ -838,15 +838,11 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
-// Connect to MongoDB (guarded for serverless environments)
+// Connect to MongoDB
 const mongoURI = process.env.MONGO_URI; // Use the MongoDB URI from the environment variable
-if (mongoURI) {
-    mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-        .then(() => console.log("MongoDB connected for authentication"))
-        .catch(err => console.error("MongoDB connection error:", err.message));
-} else {
-    console.warn("MONGO_URI is not set. Skipping MongoDB connection.");
-}
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log("MongoDB connected for authentication"))
+    .catch(err => console.error("MongoDB connection error:", err));
 
 // Secret key for JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'your_default_jwt_secret'; // Ensure this is set
@@ -1190,13 +1186,8 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server only when not running on Vercel (serverless)
-if (!process.env.VERCEL) {
-    app.listen(PORT, () => {
-        console.log(`Express server running on port ${PORT}`);
-        console.log(`Connecting to Flask API at ${PYTHON_API_URL}`);
-    });
-}
-
-// Export app for Vercel Serverless Functions
-module.exports = app;
+// Start server
+app.listen(PORT, () => {
+    console.log(`Express server running on port ${PORT}`);
+    console.log(`Connecting to Flask API at ${PYTHON_API_URL}`);
+}); 
