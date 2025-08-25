@@ -54,14 +54,16 @@ app.use(cors({
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.use(session({
-    secret: 'mySecretKey',
-    resave: false,
-    saveUninitialized: false
-}));
-
 app.use(passport.initialize());
-app.use(passport.session());
+// Avoid using in-memory sessions in production/serverless (e.g., Vercel)
+if (process.env.NODE_ENV !== 'production') {
+  app.use(session({
+      secret: 'mySecretKey',
+      resave: false,
+      saveUninitialized: false
+  }));
+  app.use(passport.session());
+}
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -433,7 +435,7 @@ app.post('/tryouts/:id/tasks/:key/replace', verifyToken, async (req, res) => {
 });
 
 // ----- Daily Reminder Cron (09:00 local) -----
-if (cron && webpush && VAPID_PUBLIC && VAPID_PRIVATE) {
+if (cron && webpush && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   try {
     cron.schedule('0 9 * * *', async () => {
       try {
