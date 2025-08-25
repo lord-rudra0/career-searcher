@@ -33,8 +33,16 @@ const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:5002';
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000', 'https://career-searcher-ex1f.vercel.app'],
-    credentials: true
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:8080',
+        'https://career-searcher-ex1f.vercel.app',
+        'https://career-searcher.vercel.app'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'x-auth-token']
 }));
 app.use(bodyParser.json());
 
@@ -46,9 +54,30 @@ dotenv.config();
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:8080', 'https://career-searcher-ex1f.vercel.app'], // Allow requests from local dev and production
-    methods: ['GET', 'POST'], // Allow specific HTTP methods
-    credentials: true // Allow credentials (if needed)
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:8080',
+        'https://career-searcher-ex1f.vercel.app',
+        'https://career-searcher.vercel.app'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'x-auth-token'],
+    credentials: true
+}));
+
+// Explicitly handle preflight
+app.options('*', cors({
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:8080',
+        'https://career-searcher-ex1f.vercel.app',
+        'https://career-searcher.vercel.app'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'x-auth-token'],
+    credentials: true
 }));
 
 app.use(express.urlencoded({ extended: true }));
