@@ -29,11 +29,11 @@ const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-const PYTHON_API_URL = 'http://localhost:5002';
+const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:5002';
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'https://career-searcher-ex1f.vercel.app'],
     credentials: true
 }));
 app.use(bodyParser.json());
@@ -46,7 +46,7 @@ dotenv.config();
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:8080'], // Allow requests from both origins
+    origin: ['http://localhost:8080', 'https://career-searcher-ex1f.vercel.app'], // Allow requests from local dev and production
     methods: ['GET', 'POST'], // Allow specific HTTP methods
     credentials: true // Allow credentials (if needed)
 }));

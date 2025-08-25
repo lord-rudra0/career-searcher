@@ -798,7 +798,8 @@ def course_plan():
 
 if __name__ == '__main__':
     try:
-        print("Starting Flask server on port 5002...")
-        app.run(debug=True, port=5002, host='0.0.0.0')
+        port = int(os.getenv("PORT", 5002))
+        print(f"Starting Flask server on port {port}...")
+        app.run(debug=False, port=port, host='0.0.0.0')
     except Exception as e:
         print(f"Error starting Flask server: {str(e)}")
