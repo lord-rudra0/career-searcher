@@ -97,6 +97,27 @@ if (process.env.NODE_ENV !== 'production') {
 // Routes
 app.use('/api/auth', authRoutes);
 
+// DB health check
+app.get('/api/db-health', async (req, res) => {
+  try {
+    const state = mongoose.connection.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
+    const labels = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+    let ping = null;
+    try {
+      if (state === 1 && mongoose.connection.db) {
+        const admin = mongoose.connection.db.admin();
+        const r = await admin.ping();
+        ping = r?.ok === 1;
+      }
+    } catch (e) {
+      ping = false;
+    }
+    res.json({ state, stateLabel: labels[state] || 'unknown', ping });
+  } catch (e) {
+    res.status(500).json({ error: 'db health check failed', details: e.message });
+  }
+});
+
 // Protected route example
 app.get('/api/profile', verifyToken, (req, res) => {
   res.json({ message: 'Protected route accessed successfully', user: req.user });
