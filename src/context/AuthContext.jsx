@@ -85,10 +85,29 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ email, password })
       });
       
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Login failed');
+      // Robust parsing: prefer JSON, fallback to text
+      const contentType = response.headers.get('content-type') || '';
+      let data;
+      try {
+        data = contentType.includes('application/json')
+          ? await response.json()
+          : await response.text();
+      } catch (e) {
+        // If parsing fails, attempt text; if that also fails, keep undefined
+        try { data = await response.text(); } catch (_) { /* noop */ }
+      }
+
+      if (!response.ok) {
+        const message = (data && data.message)
+          || (typeof data === 'string' && data)
+          || 'Login failed';
+        throw new Error(message);
+      }
       
-      const { token, user: userData } = data;
+      const { token, user: userData } = typeof data === 'string' ? {} : data;
+      if (!token || !userData) {
+        throw new Error('Unexpected response from server during login');
+      }
       localStorage.setItem("token", token);
 
       setUser({
@@ -118,10 +137,28 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ username, email, password, groupType, preferences })
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Registration failed');
+      // Robust parsing: prefer JSON, fallback to text
+      const contentType = response.headers.get('content-type') || '';
+      let data;
+      try {
+        data = contentType.includes('application/json')
+          ? await response.json()
+          : await response.text();
+      } catch (e) {
+        try { data = await response.text(); } catch (_) { /* noop */ }
+      }
+
+      if (!response.ok) {
+        const message = (data && data.message)
+          || (typeof data === 'string' && data)
+          || 'Registration failed';
+        throw new Error(message);
+      }
       
-      const { token, user: userData } = data;
+      const { token, user: userData } = typeof data === 'string' ? {} : data;
+      if (!token || !userData) {
+        throw new Error('Unexpected response from server during registration');
+      }
       localStorage.setItem("token", token);
 
       setUser({
