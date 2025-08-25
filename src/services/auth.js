@@ -1,14 +1,14 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://career-searcher-g9gz.vercel.app';
 
 const auth = {
     register: async (username, email, password) => {
         try {
             const response = await axios.post(
-                `${API_BASE_URL}/api/register`,
+                `${API_BASE_URL}/auth/register`,
                 { username, email, password },
-                { withCredentials: true }
+                {}
             );
             return response.data;
         } catch (error) {
@@ -19,12 +19,12 @@ const auth = {
         }
     },
 
-    login: async (username, password) => {
+    login: async (email, password) => {
         try {
             const response = await axios.post(
-                `${API_BASE_URL}/api/login`,
-                { username, password },
-                { withCredentials: true }
+                `${API_BASE_URL}/auth/login`,
+                { email, password },
+                {}
             );
             return response.data;
         } catch (error) {
@@ -37,11 +37,8 @@ const auth = {
 
     logout: async () => {
         try {
-            const response = await axios.get(
-                `${API_BASE_URL}/api/logout`,
-                { withCredentials: true }
-            );
-            return response.data;
+            // No server logout endpoint; caller should clear local token
+            return { ok: true };
         } catch (error) {
             throw new Error(
                 error.response?.data?.error || 

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Update port to match Express server
-const API_BASE_URL = 'http://localhost:5001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://career-searcher-g9gz.vercel.app';
 
 // Create axios instance with timeout
 const axiosInstance = axios.create({
@@ -115,15 +115,15 @@ const api = {
 
   // Utilities
   testApi: async () => {
-    const response = await axiosInstance.get('/test-api');
+    const response = await axiosInstance.get('/api/test-api');
     return response.data;
   },
   listModels: async () => {
-    const response = await axiosInstance.get('/list-models');
+    const response = await axiosInstance.get('/api/list-models');
     return response.data;
   },
   webSearch: async (careers) => {
-    const response = await axiosInstance.post('/web-search', { careers });
+    const response = await axiosInstance.post('/api/web-search', { careers });
     return response.data;
   },
   searchWebCareers: async (analysis) => {
