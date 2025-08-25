@@ -834,6 +834,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running' });
 });
 
+// Debug: expose minimal runtime config for troubleshooting
+app.get('/api/config', (req, res) => {
+  res.json({
+    PYTHON_API_URL: PYTHON_API_URL,
+    NODE_ENV: process.env.NODE_ENV || null,
+    VERCEL: !!process.env.VERCEL
+  });
+});
+
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
