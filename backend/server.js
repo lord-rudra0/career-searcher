@@ -838,11 +838,15 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
-// Connect to MongoDB
+// Connect to MongoDB (guarded for serverless environments)
 const mongoURI = process.env.MONGO_URI; // Use the MongoDB URI from the environment variable
-mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log("MongoDB connected for authentication"))
-    .catch(err => console.error("MongoDB connection error:", err));
+if (mongoURI) {
+    mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+        .then(() => console.log("MongoDB connected for authentication"))
+        .catch(err => console.error("MongoDB connection error:", err.message));
+} else {
+    console.warn("MONGO_URI is not set. Skipping MongoDB connection.");
+}
 
 // Secret key for JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'your_default_jwt_secret'; // Ensure this is set

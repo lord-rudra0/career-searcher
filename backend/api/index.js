@@ -1,5 +1,5 @@
 // Vercel Serverless Function entry for Express app
-// Exports the Express app; @vercel/node will treat this as the handler.
+// Export a handler that delegates to the Express app
 const app = require('../server');
 
-module.exports = app;
+module.exports = (req, res) => app(req, res);
