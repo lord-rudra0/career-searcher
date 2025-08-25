@@ -1186,8 +1186,12 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`Express server running on port ${PORT}`);
-    console.log(`Connecting to Flask API at ${PYTHON_API_URL}`);
-}); 
+// Export app for serverless (Vercel) and start server only when not on Vercel
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+      console.log(`Express server running on port ${PORT}`);
+      console.log(`Connecting to Flask API at ${PYTHON_API_URL}`);
+  });
+}
+
+module.exports = app;

@@ -24,7 +24,8 @@
     "passport-local": "^1.0.0",
     "sonner": "^2.0.1",
     "web-push": "^3.6.6",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "serverless-http": "^3.2.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
