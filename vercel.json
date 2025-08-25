@@ -1,8 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "backend/api/index.js", "use": "@vercel/node" }
-  ],
   "functions": {
     "backend/api/index.js": {
       "includeFiles": "{backend/server.js,backend/middleware/**,backend/models/**,backend/routes/**}"
