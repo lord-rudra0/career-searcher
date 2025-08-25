@@ -5,12 +5,7 @@
   ],
   "functions": {
     "backend/api/index.js": {
-      "includeFiles": [
-        "backend/server.js",
-        "backend/middleware/**",
-        "backend/models/**",
-        "backend/routes/**"
-      ]
+      "includeFiles": "{backend/server.js,backend/middleware/**,backend/models/**,backend/routes/**}"
     }
   },
   "routes": [
