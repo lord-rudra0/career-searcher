@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "backend/api/index.js", "use": "@vercel/node" }
+  ],
+  "functions": {
+    "backend/api/index.js": {
+      "includeFiles": [
+        "backend/server.js",
+        "backend/middleware/**",
+        "backend/models/**",
+        "backend/routes/**"
+      ]
+    }
+  },
+  "routes": [
+    { "src": "/(.*)", "dest": "backend/api/index.js" }
+  ],
+  "installCommand": "npm ci --prefix backend",
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
