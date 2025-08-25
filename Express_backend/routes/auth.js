@@ -5,12 +5,15 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { verifyToken } = require('../middleware/auth');
 
-// @route   POST api/auth/register
+// @route   POST /auth/register
 // @desc    Register a new user
 // @access  Public
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { username, email, password, groupType, preferences } = req.body;
+    if (!username || !email || !password || !groupType) {
+      return res.status(400).json({ message: 'username, email, password, and groupType are required' });
+    }
     
     // Check if user already exists
     let user = await User.findOne({ email });
@@ -19,28 +22,29 @@ router.post('/register', async (req, res) => {
     }
     
     // Create new user
-    user = new User({
-      name,
-      email,
-      password
-    });
+    user = new User({ username, email, password, groupType, preferences });
     
     await user.save();
     
     // Create JWT token
-    const payload = {
-      user: {
-        id: user.id
-      }
-    };
+    const payload = { id: user.id, username: user.username };
     
     jwt.sign(
       payload,
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your_default_jwt_secret',
       { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+        res.json({
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            groupType: user.groupType,
+            preferences: user.preferences || { colleges: [] }
+          }
+        });
       }
     );
   } catch (err) {
@@ -49,7 +53,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// @route   POST api/auth/login
+// @route   POST /auth/login
 // @desc    Authenticate user & get token
 // @access  Public
 router.post('/login', async (req, res) => {
@@ -63,25 +67,30 @@ router.post('/login', async (req, res) => {
     }
     
     // Check password
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await user.verifyPassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
     
     // Create JWT token
-    const payload = {
-      user: {
-        id: user.id
-      }
-    };
+    const payload = { id: user.id, username: user.username };
     
     jwt.sign(
       payload,
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || 'your_default_jwt_secret',
       { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+        res.json({
+          token,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            groupType: user.groupType,
+            preferences: user.preferences || { colleges: [] }
+          }
+        });
       }
     );
   } catch (err) {
@@ -90,7 +99,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// @route   GET api/auth/user
+// @route   GET /auth/user
 // @desc    Get user data
 // @access  Private
 router.get('/user', verifyToken, async (req, res) => {
