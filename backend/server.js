@@ -433,8 +433,7 @@ app.post('/tryouts/:id/tasks/:key/replace', verifyToken, async (req, res) => {
 });
 
 // ----- Daily Reminder Cron (09:00 local) -----
-// Guard against missing VAPID keys on serverless envs
-if (cron && webpush && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+if (cron && webpush && VAPID_PUBLIC && VAPID_PRIVATE) {
   try {
     cron.schedule('0 9 * * *', async () => {
       try {
@@ -835,28 +834,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running' });
 });
 
-// Debug: expose minimal runtime config for troubleshooting
-app.get('/api/config', (req, res) => {
-  res.json({
-    PYTHON_API_URL: PYTHON_API_URL,
-    NODE_ENV: process.env.NODE_ENV || null,
-    VERCEL: !!process.env.VERCEL
-  });
-});
-
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
-// Connect to MongoDB (shorter timeout to avoid serverless cold-start hangs)
+// Connect to MongoDB
 const mongoURI = process.env.MONGO_URI; // Use the MongoDB URI from the environment variable
-mongoose.connect(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 10000, // 10s timeout for server selection (was indefinite)
-})
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log("MongoDB connected for authentication"))
-    .catch(err => console.error("MongoDB connection error:", err.message));
+    .catch(err => console.error("MongoDB connection error:", err));
 
 // Secret key for JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'your_default_jwt_secret'; // Ensure this is set
@@ -1200,12 +1186,8 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Export app for serverless (Vercel) and start server only when not on Vercel
-if (!process.env.VERCEL) {
-  app.listen(PORT, () => {
-      console.log(`Express server running on port ${PORT}`);
-      console.log(`Connecting to Flask API at ${PYTHON_API_URL}`);
-  });
-}
-
-module.exports = app;
+// Start server
+app.listen(PORT, () => {
+    console.log(`Express server running on port ${PORT}`);
+    console.log(`Connecting to Flask API at ${PYTHON_API_URL}`);
+}); 
